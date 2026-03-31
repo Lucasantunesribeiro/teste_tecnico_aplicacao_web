@@ -1,0 +1,14 @@
+{
+  "admin": {
+    "cpf": "11122233344",
+    "senha": "admin123",
+    "nome": "Administrador",
+    "tipo": "ADMIN"
+  },
+  "user": {
+    "cpf": "55566677788",
+    "senha": "user123",
+    "nome": "Usuário Comum",
+    "tipo": "USER"
+  }
+}
