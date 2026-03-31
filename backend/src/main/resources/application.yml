@@ -32,7 +32,7 @@ spring:
       time-to-live: 86400000
 
 jwt:
-  secret: ${JWT_SECRET:Y29tcGxleC1zZWNyZXQta2V5LXRoYXQtaXMtbG9uZy1lbm91Z2gtZm9yLWpqd3QtaHM1MTItYWxnb3JpdGht}
+  secret: ${JWT_SECRET}
   expiration: ${JWT_EXPIRATION:86400000}
 
 logging:
