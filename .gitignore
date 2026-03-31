@@ -1,0 +1,54 @@
+# ===========================
+# Backend (Java / Spring Boot)
+# ===========================
+backend/target/
+backend/.idea/
+backend/*.iml
+backend/.classpath
+backend/.project
+backend/.settings/
+backend/.mvn/wrapper/maven-wrapper.jar
+backend/mvnw.cmd
+*.class
+*.jar
+*.war
+*.ear
+*.log
+*.tmp
+
+# ===========================
+# Frontend (Node / React)
+# ===========================
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/coverage/
+frontend/*.log
+frontend/.env.local
+frontend/.env.production
+
+# ===========================
+# Docker
+# ===========================
+.env
+.env.local
+.env.production
+.env.*.local
+
+# ===========================
+# IDE
+# ===========================
+.idea/
+.vscode/
+*.swp
+*.swo
+*.iml
+.DS_Store
+Thumbs.db
+
+# ===========================
+# OS
+# ===========================
+.DS_Store
+Thumbs.db
+desktop.ini
