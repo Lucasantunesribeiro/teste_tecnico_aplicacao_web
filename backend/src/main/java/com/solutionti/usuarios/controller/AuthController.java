@@ -3,6 +3,7 @@ package com.solutionti.usuarios.controller;
 import com.solutionti.usuarios.dto.request.LoginRequest;
 import com.solutionti.usuarios.dto.response.ErrorResponse;
 import com.solutionti.usuarios.dto.response.LoginResponse;
+import com.solutionti.usuarios.security.LoginRateLimiter;
 import com.solutionti.usuarios.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -10,6 +11,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final AuthService authService;
+    private final LoginRateLimiter rateLimiter;
 
     @PostMapping("/login")
     @Operation(summary = "Autenticar usuário", description = "Realiza autenticação via CPF e senha, retornando um token JWT")
@@ -36,11 +39,30 @@ public class AuthController {
         @ApiResponse(responseCode = "400", description = "Credenciais inválidas ou dados incorretos",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
         @ApiResponse(responseCode = "422", description = "Dados de entrada inválidos",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(responseCode = "429", description = "Muitas tentativas. Aguarde antes de tentar novamente.",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
-    public ResponseEntity<LoginResponse> login(@RequestBody @Valid LoginRequest request) {
-        log.info("Requisição de login recebida para CPF: {}", request.cpf());
+    public ResponseEntity<LoginResponse> login(
+            @RequestBody @Valid LoginRequest request,
+            HttpServletRequest httpRequest) {
+
+        String clientIp = resolveClientIp(httpRequest);
+        log.info("Requisição de login recebida para CPF: {} (IP: {})", request.cpf(), clientIp);
+
+        rateLimiter.checkRateLimit(clientIp);
+
         LoginResponse response = authService.login(request);
+        rateLimiter.resetAttempts(clientIp);
+
         return ResponseEntity.ok(response);
+    }
+
+    private String resolveClientIp(HttpServletRequest request) {
+        String xForwardedFor = request.getHeader("X-Forwarded-For");
+        if (xForwardedFor != null && !xForwardedFor.isBlank()) {
+            return xForwardedFor.split(",")[0].trim();
+        }
+        return request.getRemoteAddr();
     }
 }

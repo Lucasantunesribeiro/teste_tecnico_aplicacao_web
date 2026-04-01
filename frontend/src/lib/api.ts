@@ -8,14 +8,9 @@ const api = axios.create({
 })
 
 api.interceptors.request.use((config) => {
-  const stored = localStorage.getItem('auth-storage')
-  if (stored) {
-    try {
-      const { state } = JSON.parse(stored)
-      if (state?.token) {
-        config.headers.Authorization = `Bearer ${state.token}`
-      }
-    } catch {}
+  const token = useAuthStore.getState().token
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
   }
   return config
 })
@@ -32,6 +27,9 @@ api.interceptors.response.use(
       toast.error('Recurso não encontrado')
     } else if (status === 400) {
       const msg = error.response?.data?.message || 'Dados inválidos'
+      toast.error(msg)
+    } else if (status === 429) {
+      const msg = error.response?.data?.message || 'Muitas tentativas. Aguarde antes de tentar novamente.'
       toast.error(msg)
     } else if (status >= 500) {
       toast.error('Erro interno do servidor')

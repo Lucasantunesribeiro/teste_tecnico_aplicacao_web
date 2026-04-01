@@ -2,9 +2,13 @@ package com.solutionti.usuarios.security;
 
 import com.solutionti.usuarios.entity.Usuario;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.security.SignatureException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -55,10 +59,18 @@ public class JwtTokenProvider {
         try {
             Jwts.parser().verifyWith(getSigningKey()).build().parseSignedClaims(token);
             return true;
-        } catch (Exception e) {
-            log.error("Token inválido: {}", e.getMessage());
-            return false;
+        } catch (ExpiredJwtException e) {
+            log.warn("Token JWT expirado: {}", e.getMessage());
+        } catch (MalformedJwtException e) {
+            log.warn("Token JWT malformado: {}", e.getMessage());
+        } catch (UnsupportedJwtException e) {
+            log.warn("Token JWT não suportado: {}", e.getMessage());
+        } catch (SignatureException e) {
+            log.warn("Assinatura JWT inválida: {}", e.getMessage());
+        } catch (IllegalArgumentException e) {
+            log.warn("Claims JWT vazio ou nulo: {}", e.getMessage());
         }
+        return false;
     }
 
     public long getExpirationTime() {

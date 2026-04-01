@@ -153,6 +153,12 @@ public class EnderecoServiceImpl implements EnderecoService {
         UUID usuarioId = endereco.getUsuario().getId();
         verificarPermissaoUsuario(usuarioId);
 
+        // Pessimistic lock em todos os endereços do usuário para evitar race condition:
+        // impede que duas requisições simultâneas marquem dois endereços como principal.
+        // O índice parcial único no banco é a última barreira; este lock previne a
+        // exceção de constraint chegando ao cliente.
+        enderecoRepository.findByUsuarioIdForUpdate(usuarioId);
+
         enderecoRepository.desmarcarPrincipalPorUsuario(usuarioId);
         endereco.tornarPrincipal();
         Endereco updated = enderecoRepository.save(endereco);

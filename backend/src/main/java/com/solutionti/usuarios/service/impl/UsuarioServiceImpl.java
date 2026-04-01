@@ -37,11 +37,11 @@ public class UsuarioServiceImpl implements UsuarioService {
         log.info("Criando novo usuário com CPF: {}", request.cpf());
 
         if (!cpfValidator.isValid(request.cpf())) {
-            throw new BusinessException("CPF inválido: " + request.cpf());
+            throw new BusinessException("CPF inválido");
         }
 
         if (usuarioRepository.existsByCpf(request.cpf())) {
-            throw new BusinessException("Já existe um usuário cadastrado com o CPF: " + request.cpf());
+            throw new BusinessException("CPF já cadastrado");
         }
 
         Usuario usuario = usuarioMapper.toEntity(request);
@@ -92,10 +92,10 @@ public class UsuarioServiceImpl implements UsuarioService {
 
         if (!usuario.getCpf().equals(request.cpf())) {
             if (!cpfValidator.isValid(request.cpf())) {
-                throw new BusinessException("CPF inválido: " + request.cpf());
+                throw new BusinessException("CPF inválido");
             }
             if (usuarioRepository.existsByCpf(request.cpf())) {
-                throw new BusinessException("Já existe um usuário cadastrado com o CPF: " + request.cpf());
+                throw new BusinessException("CPF já cadastrado");
             }
         }
 

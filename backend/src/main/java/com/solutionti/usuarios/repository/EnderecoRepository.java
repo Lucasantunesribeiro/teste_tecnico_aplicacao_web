@@ -1,7 +1,9 @@
 package com.solutionti.usuarios.repository;
 
 import com.solutionti.usuarios.entity.Endereco;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -18,6 +20,10 @@ public interface EnderecoRepository extends JpaRepository<Endereco, UUID> {
     Optional<Endereco> findFirstByUsuarioIdOrderByCreatedAtAsc(UUID usuarioId);
     boolean existsByUsuarioId(UUID usuarioId);
     long countByUsuarioId(UUID usuarioId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT e FROM Endereco e WHERE e.usuario.id = :usuarioId")
+    List<Endereco> findByUsuarioIdForUpdate(@Param("usuarioId") UUID usuarioId);
 
     @Modifying
     @Query("UPDATE Endereco e SET e.principal = false WHERE e.usuario.id = :usuarioId")

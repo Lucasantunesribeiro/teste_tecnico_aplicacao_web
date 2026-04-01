@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { PlusCircle } from 'lucide-react'
+import { Loader2, PlusCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { EnderecoList } from '@/features/enderecos/components/EnderecoList'
@@ -10,7 +10,13 @@ export function EnderecosPage() {
   const [open, setOpen] = useState(false)
   const user = useAuthStore((s) => s.user)
 
-  if (!user) return null
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">

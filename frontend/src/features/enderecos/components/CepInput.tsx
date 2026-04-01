@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { Loader2 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -16,6 +16,13 @@ interface Props {
 export function CepInput({ value, onChange, onCepFound, error }: Props) {
   const { mutate, isPending } = useConsultaCep()
 
+  // Callback ref pattern: mantém a referência atualizada sem re-acionar o useEffect
+  // a cada render do componente pai, evitando consultas duplicadas ao CEP.
+  const onCepFoundRef = useRef(onCepFound)
+  useEffect(() => {
+    onCepFoundRef.current = onCepFound
+  })
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatCEP(e.target.value)
     onChange(formatted)
@@ -24,9 +31,11 @@ export function CepInput({ value, onChange, onCepFound, error }: Props) {
   useEffect(() => {
     const clean = cleanCEP(value)
     if (clean.length === 8) {
-      mutate(clean, { onSuccess: onCepFound })
+      mutate(clean, {
+        onSuccess: (data) => onCepFoundRef.current(data),
+      })
     }
-  }, [value])
+  }, [value, mutate])
 
   return (
     <div className="space-y-2">
