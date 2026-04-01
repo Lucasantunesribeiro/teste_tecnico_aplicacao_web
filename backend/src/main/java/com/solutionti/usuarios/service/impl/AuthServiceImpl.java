@@ -25,18 +25,18 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public LoginResponse login(LoginRequest request) {
-        log.info("Tentativa de login para CPF: {}", request.cpf());
+        log.info("Tentativa de login recebida");
 
         Usuario usuario = usuarioRepository.findByCpf(request.cpf())
             .orElseThrow(() -> new NotFoundException("Credenciais inválidas"));
 
         if (!StatusUsuario.ATIVO.equals(usuario.getStatus())) {
-            log.warn("Tentativa de login de usuário inativo: {}", request.cpf());
+            log.warn("Tentativa de login de usuário inativo");
             throw new BusinessException("Usuário inativo. Entre em contato com o administrador.");
         }
 
         if (!passwordEncoder.matches(request.senha(), usuario.getSenha())) {
-            log.warn("Senha incorreta para CPF: {}", request.cpf());
+            log.warn("Credenciais inválidas");
             throw new BusinessException("Credenciais inválidas");
         }
 

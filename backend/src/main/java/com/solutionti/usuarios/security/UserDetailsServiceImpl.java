@@ -1,6 +1,7 @@
 package com.solutionti.usuarios.security;
 
 import com.solutionti.usuarios.entity.Usuario;
+import com.solutionti.usuarios.entity.enums.StatusUsuario;
 import com.solutionti.usuarios.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,9 +34,14 @@ public class UserDetailsServiceImpl implements UserDetailsService {
             case USER -> "ROLE_USER";
         };
 
+        boolean enabled = StatusUsuario.ATIVO.equals(usuario.getStatus());
         return new User(
             usuario.getId().toString(),
             usuario.getSenha(),
+            enabled,
+            true,
+            true,
+            true,
             List.of(new SimpleGrantedAuthority(role))
         );
     }

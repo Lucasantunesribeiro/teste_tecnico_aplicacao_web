@@ -15,5 +15,8 @@ export function useLogin() {
       toast.success(`Bem-vindo, ${data.nome}!`)
       navigate('/dashboard')
     },
+    onError: () => {
+      toast.error('Não foi possível realizar o login. Verifique suas credenciais.')
+    },
   })
 }

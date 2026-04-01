@@ -48,7 +48,7 @@ public class AuthController {
             HttpServletRequest httpRequest) {
 
         String clientIp = resolveClientIp(httpRequest);
-        log.info("Requisição de login recebida para CPF: {} (IP: {})", request.cpf(), clientIp);
+        log.info("Requisição de login recebida (IP: {})", clientIp);
 
         rateLimiter.checkRateLimit(clientIp);
 

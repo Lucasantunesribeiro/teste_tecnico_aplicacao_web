@@ -35,12 +35,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String userId = jwtTokenProvider.getUserIdFromToken(token);
                 UserDetails userDetails = userDetailsService.loadUserByUsername(userId);
 
-                UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                if (!userDetails.isEnabled()) {
+                    log.warn("Token válido mas usuário inativo: {}", userId);
+                } else {
+                    UsernamePasswordAuthenticationToken authentication =
+                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-                log.debug("Autenticação definida para o usuário: {}", userId);
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                    log.debug("Autenticação definida para o usuário: {}", userId);
+                }
             }
         } catch (Exception e) {
             log.error("Erro ao processar autenticação JWT: {}", e.getMessage());

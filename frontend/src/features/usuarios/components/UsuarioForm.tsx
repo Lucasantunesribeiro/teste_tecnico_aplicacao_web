@@ -11,7 +11,13 @@ const schema = z.object({
   nome: z.string().min(2, 'Nome muito curto'),
   cpf: z.string().min(11, 'CPF inválido'),
   dataNascimento: z.string().min(1, 'Data obrigatória'),
-  senha: z.string().min(6, 'Mínimo 6 caracteres'),
+  senha: z
+    .string()
+    .min(8, 'Mínimo 8 caracteres')
+    .regex(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/,
+      'Senha deve ter maiúscula, minúscula e número'
+    ),
 })
 
 type FormData = z.infer<typeof schema>
