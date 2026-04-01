@@ -22,6 +22,8 @@ public interface EnderecoMapper {
     Endereco toEntity(EnderecoRequest request);
 
     @Mapping(target = "usuarioId", source = "usuario.id")
+    @Mapping(target = "usuarioNome", source = "usuario.nome")
+    @Mapping(target = "usuarioCpf", source = "usuario.cpf")
     EnderecoResponse toResponse(Endereco entity);
 
     List<EnderecoResponse> toResponseList(List<Endereco> entities);

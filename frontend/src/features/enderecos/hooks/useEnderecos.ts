@@ -1,8 +1,16 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { enderecoService } from '../services/enderecoService'
 import { cepService } from '../services/cepService'
-import type { EnderecoRequest } from '../types/endereco.types'
+import { enderecoService } from '../services/enderecoService'
+import type {
+  AtualizarEnderecoRequest,
+  EnderecoRequest,
+  ListarEnderecosParams,
+} from '../types/endereco.types'
+
+interface QueryOptions {
+  enabled?: boolean
+}
 
 export function useEnderecos(usuarioId: string) {
   return useQuery({
@@ -12,35 +20,61 @@ export function useEnderecos(usuarioId: string) {
   })
 }
 
+export function useAdminEnderecos(params: ListarEnderecosParams = {}, options: QueryOptions = {}) {
+  return useQuery({
+    queryKey: ['enderecos-admin', params],
+    queryFn: () => enderecoService.listarTodos(params),
+    enabled: options.enabled ?? true,
+  })
+}
+
 export function useCreateEndereco() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (data: EnderecoRequest) => enderecoService.criar(data),
-    onSuccess: (_, variables) => {
-      toast.success('Endereço adicionado!')
-      queryClient.invalidateQueries({ queryKey: ['enderecos', variables.usuarioId] })
+    onSuccess: () => {
+      toast.success('Endereco adicionado!')
+      queryClient.invalidateQueries({ queryKey: ['enderecos'] })
+      queryClient.invalidateQueries({ queryKey: ['enderecos-admin'] })
+      queryClient.invalidateQueries({ queryKey: ['usuarios'] })
     },
   })
 }
 
-export function useDeleteEndereco(usuarioId: string) {
+export function useUpdateEndereco() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: AtualizarEnderecoRequest }) =>
+      enderecoService.atualizar(id, data),
+    onSuccess: () => {
+      toast.success('Endereco atualizado!')
+      queryClient.invalidateQueries({ queryKey: ['enderecos'] })
+      queryClient.invalidateQueries({ queryKey: ['enderecos-admin'] })
+    },
+  })
+}
+
+export function useDeleteEndereco() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => enderecoService.deletar(id),
     onSuccess: () => {
-      toast.success('Endereço removido!')
-      queryClient.invalidateQueries({ queryKey: ['enderecos', usuarioId] })
+      toast.success('Endereco removido!')
+      queryClient.invalidateQueries({ queryKey: ['enderecos'] })
+      queryClient.invalidateQueries({ queryKey: ['enderecos-admin'] })
+      queryClient.invalidateQueries({ queryKey: ['usuarios'] })
     },
   })
 }
 
-export function useSetPrincipal(usuarioId: string) {
+export function useSetPrincipal() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => enderecoService.tornarPrincipal(id),
     onSuccess: () => {
-      toast.success('Endereço principal atualizado!')
-      queryClient.invalidateQueries({ queryKey: ['enderecos', usuarioId] })
+      toast.success('Endereco principal atualizado!')
+      queryClient.invalidateQueries({ queryKey: ['enderecos'] })
+      queryClient.invalidateQueries({ queryKey: ['enderecos-admin'] })
     },
   })
 }

@@ -3,10 +3,15 @@ import { toast } from 'sonner'
 import { usuarioService } from '../services/usuarioService'
 import type { UsuarioRequest } from '../types/usuario.types'
 
-export function useUsuarios(params = {}) {
+interface UseUsuariosOptions {
+  enabled?: boolean
+}
+
+export function useUsuarios(params = {}, options: UseUsuariosOptions = {}) {
   return useQuery({
     queryKey: ['usuarios', params],
     queryFn: () => usuarioService.listar(params),
+    enabled: options.enabled ?? true,
   })
 }
 

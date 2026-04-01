@@ -1,13 +1,13 @@
 {
   "admin": {
-    "cpf": "11122233344",
-    "senha": "admin123",
+    "cpf": "52998224725",
+    "senha": "Admin123!",
     "nome": "Administrador",
     "tipo": "ADMIN"
   },
   "user": {
-    "cpf": "55566677788",
-    "senha": "user123",
+    "cpf": "39053344705",
+    "senha": "User123!",
     "nome": "Usuário Comum",
     "tipo": "USER"
   }

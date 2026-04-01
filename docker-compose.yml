@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   postgres:
     image: postgres:16-alpine
@@ -9,7 +7,7 @@ services:
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASS:-postgres}
     ports:
-      - "${DB_PORT:-5432}:5432"
+      - "${DB_HOST_PORT:-15432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./backend/src/main/resources/db/migration/V1__init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -27,7 +25,7 @@ services:
     container_name: usuarios_redis
     command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
     ports:
-      - "${REDIS_PORT:-6379}:6379"
+      - "${REDIS_HOST_PORT:-6380}:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -53,10 +51,11 @@ services:
       REDIS_PORT: 6379
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       JPA_SHOW_SQL: ${JPA_SHOW_SQL:-false}
     ports:
-      - "8080:8080"
+      - "${BACKEND_HOST_PORT:-8081}:8080"
     depends_on:
       postgres:
         condition: service_healthy
@@ -72,7 +71,7 @@ services:
       dockerfile: Dockerfile
     container_name: usuarios_frontend
     ports:
-      - "80:80"
+      - "${FRONTEND_HOST_PORT:-8088}:80"
     depends_on:
       - backend
     networks:
@@ -82,8 +81,10 @@ services:
 volumes:
   postgres_data:
     driver: local
+    name: usuarios_postgres_data_v2
   redis_data:
     driver: local
+    name: usuarios_redis_data_v2
 
 networks:
   app-network:

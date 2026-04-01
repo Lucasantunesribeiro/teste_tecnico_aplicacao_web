@@ -81,24 +81,24 @@ CREATE TRIGGER update_enderecos_updated_at
 -- SEED DATA (desenvolvimento)
 -- =========================================
 
--- Admin: CPF 11122233344 / senha: admin123 (BCrypt $2a$10$...)
+-- Admin: CPF 52998224725 / senha: Admin123!
 INSERT INTO usuarios (nome, cpf, data_nascimento, senha, tipo, status)
 VALUES (
     'Administrador do Sistema',
-    '11122233344',
+    '52998224725',
     '1990-01-01',
-    '$2a$10$N9qo8uLOickgx2ZMRZoMy.MqrqQzBZN0UfGNEsKYGs5qJZQh1Qj7q',
+    '$2a$10$vo9AOP.q2QQ5YbG6euJ.AebzvGHk2HUL8PJr67FfMrN/F7Rw4rEiS',
     'ADMIN',
     'ATIVO'
 ) ON CONFLICT (cpf) DO NOTHING;
 
--- User: CPF 55566677788 / senha: user123 (mesmo hash para simplificar seed)
+-- User: CPF 39053344705 / senha: User123!
 INSERT INTO usuarios (nome, cpf, data_nascimento, senha, tipo, status)
 VALUES (
     'Usuário de Teste',
-    '55566677788',
+    '39053344705',
     '1995-05-15',
-    '$2a$10$N9qo8uLOickgx2ZMRZoMy.MqrqQzBZN0UfGNEsKYGs5qJZQh1Qj7q',
+    '$2a$10$8NJ2vVg7rjK1/5Gv84/VL.A1L7nu1waciCMnVMln.J5trCqrehgpG',
     'USER',
     'ATIVO'
 ) ON CONFLICT (cpf) DO NOTHING;
@@ -108,7 +108,7 @@ INSERT INTO enderecos (cep, logradouro, numero, complemento, bairro, cidade, est
 SELECT
     '01310100', 'Avenida Paulista', '1000', 'Sala 100',
     'Bela Vista', 'São Paulo', 'SP', TRUE, id
-FROM usuarios WHERE cpf = '11122233344'
+FROM usuarios WHERE cpf = '52998224725'
 ON CONFLICT DO NOTHING;
 
 -- Endereço secundário do admin
@@ -116,5 +116,5 @@ INSERT INTO enderecos (cep, logradouro, numero, bairro, cidade, estado, principa
 SELECT
     '20040002', 'Avenida Rio Branco', '50',
     'Centro', 'Rio de Janeiro', 'RJ', FALSE, id
-FROM usuarios WHERE cpf = '11122233344'
+FROM usuarios WHERE cpf = '52998224725'
 ON CONFLICT DO NOTHING;

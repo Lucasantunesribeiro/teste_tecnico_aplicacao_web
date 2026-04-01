@@ -4,7 +4,7 @@ import { useUsuarios, useDeleteUsuario } from '../hooks/useUsuarios'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 
 export function UsuarioList() {
-  const { data, isLoading } = useUsuarios()
+  const { data, isLoading, isError } = useUsuarios()
   const { mutate: deleteUsuario } = useDeleteUsuario()
   const { isAdmin } = useAuth()
 
@@ -16,14 +16,18 @@ export function UsuarioList() {
     )
   }
 
+  if (isError) {
+    return (
+      <p className="rounded-md border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+        Não foi possível carregar os usuários.
+      </p>
+    )
+  }
+
   const usuarios = data?.content ?? []
 
   if (usuarios.length === 0) {
-    return (
-      <p className="text-center text-muted-foreground py-8">
-        Nenhum usuário encontrado.
-      </p>
-    )
+    return <p className="py-8 text-center text-muted-foreground">Nenhum usuário encontrado.</p>
   }
 
   return (

@@ -17,6 +17,29 @@ export function cleanCPF(value: string): string {
   return value.replace(/\D/g, '')
 }
 
+export function isValidCPF(value: string): boolean {
+  const cpf = cleanCPF(value)
+
+  if (!/^\d{11}$/.test(cpf)) return false
+  if (/^(\d)\1{10}$/.test(cpf)) return false
+
+  const digits = cpf.split('').map(Number)
+
+  const calcDigit = (sliceLength: number) => {
+    const weightStart = sliceLength + 1
+    const sum = digits.slice(0, sliceLength).reduce((acc, digit, index) => {
+      return acc + digit * (weightStart - index)
+    }, 0)
+    const remainder = sum % 11
+    return remainder < 2 ? 0 : 11 - remainder
+  }
+
+  const firstDigit = calcDigit(9)
+  const secondDigit = calcDigit(10)
+
+  return digits[9] === firstDigit && digits[10] === secondDigit
+}
+
 export function formatCEP(value: string): string {
   const digits = value.replace(/\D/g, '').slice(0, 8)
   if (digits.length <= 5) return digits
@@ -25,6 +48,10 @@ export function formatCEP(value: string): string {
 
 export function cleanCEP(value: string): string {
   return value.replace(/\D/g, '')
+}
+
+export function isValidCEP(value: string): boolean {
+  return /^\d{8}$/.test(cleanCEP(value))
 }
 
 export function formatDate(value: string): string {

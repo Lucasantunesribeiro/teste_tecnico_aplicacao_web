@@ -1,5 +1,7 @@
 package com.solutionti.usuarios.service.impl;
 
+import com.solutionti.usuarios.dto.request.AlterarSenhaRequest;
+import com.solutionti.usuarios.dto.request.AtualizarUsuarioRequest;
 import com.solutionti.usuarios.dto.request.UsuarioRequest;
 import com.solutionti.usuarios.dto.response.UsuarioResponse;
 import com.solutionti.usuarios.entity.Usuario;
@@ -11,6 +13,7 @@ import com.solutionti.usuarios.repository.UsuarioRepository;
 import com.solutionti.usuarios.security.SecurityUtils;
 import com.solutionti.usuarios.service.UsuarioService;
 import com.solutionti.usuarios.validator.CpfValidator;
+import org.springframework.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -35,6 +38,8 @@ public class UsuarioServiceImpl implements UsuarioService {
     @Transactional
     public UsuarioResponse criar(UsuarioRequest request) {
         log.info("Criando novo usuário com CPF: {}", request.cpf());
+
+        requireAdmin("apenas administradores podem criar usuários");
 
         if (!cpfValidator.isValid(request.cpf())) {
             throw new BusinessException("CPF inválido");
@@ -71,9 +76,7 @@ public class UsuarioServiceImpl implements UsuarioService {
     public Page<UsuarioResponse> listarTodos(Pageable pageable) {
         log.debug("Listando todos os usuários, página: {}", pageable.getPageNumber());
 
-        if (!SecurityUtils.isAdmin()) {
-            throw new ForbiddenException("Acesso negado: apenas administradores podem listar todos os usuários");
-        }
+        requireAdmin("apenas administradores podem listar todos os usuários");
 
         return usuarioRepository.findAll(pageable)
             .map(usuarioMapper::toResponse);
@@ -81,12 +84,10 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     @Override
     @Transactional
-    public UsuarioResponse atualizar(UUID id, UsuarioRequest request) {
+    public UsuarioResponse atualizar(UUID id, AtualizarUsuarioRequest request) {
         log.info("Atualizando usuário ID: {}", id);
 
-        if (!SecurityUtils.isAdmin() && !SecurityUtils.isOwner(id)) {
-            throw new ForbiddenException("Acesso negado: você não tem permissão para atualizar este usuário");
-        }
+        requireAdmin("apenas administradores podem atualizar usuários");
 
         Usuario usuario = findUsuarioOrThrow(id);
 
@@ -100,7 +101,10 @@ public class UsuarioServiceImpl implements UsuarioService {
         }
 
         usuarioMapper.updateEntity(usuario, request);
-        usuario.setSenha(passwordEncoder.encode(request.senha()));
+
+        if (StringUtils.hasText(request.senha())) {
+            usuario.setSenha(passwordEncoder.encode(request.senha()));
+        }
 
         Usuario updated = usuarioRepository.save(usuario);
         log.info("Usuário ID: {} atualizado com sucesso", id);
@@ -110,16 +114,45 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     @Override
     @Transactional
+    public void alterarSenha(UUID id, AlterarSenhaRequest request) {
+        log.info("Alterando senha do usuário ID: {}", id);
+
+        Usuario usuario = findUsuarioOrThrow(id);
+
+        if (SecurityUtils.isAdmin()) {
+            usuario.setSenha(passwordEncoder.encode(request.novaSenha()));
+        } else if (SecurityUtils.isOwner(id)) {
+            if (!StringUtils.hasText(request.senhaAtual())) {
+                throw new BusinessException("Senha atual é obrigatória");
+            }
+            if (!passwordEncoder.matches(request.senhaAtual(), usuario.getSenha())) {
+                throw new BusinessException("Senha atual incorreta");
+            }
+            usuario.setSenha(passwordEncoder.encode(request.novaSenha()));
+        } else {
+            throw new ForbiddenException("Acesso negado: você não tem permissão para alterar a senha deste usuário");
+        }
+
+        usuarioRepository.save(usuario);
+        log.info("Senha do usuário ID: {} alterada com sucesso", id);
+    }
+
+    @Override
+    @Transactional
     public void deletar(UUID id) {
         log.info("Deletando usuário ID: {}", id);
 
-        if (!SecurityUtils.isAdmin()) {
-            throw new ForbiddenException("Acesso negado: apenas administradores podem deletar usuários");
-        }
+        requireAdmin("apenas administradores podem deletar usuários");
 
         Usuario usuario = findUsuarioOrThrow(id);
         usuarioRepository.delete(usuario);
         log.info("Usuário ID: {} deletado com sucesso", id);
+    }
+
+    private void requireAdmin(String message) {
+        if (!SecurityUtils.isAdmin()) {
+            throw new ForbiddenException("Acesso negado: " + message);
+        }
     }
 
     private Usuario findUsuarioOrThrow(UUID id) {

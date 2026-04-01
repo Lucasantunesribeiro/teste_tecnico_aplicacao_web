@@ -11,7 +11,7 @@ public record ErrorResponse(
     @Schema(description = "Momento em que o erro ocorreu")
     LocalDateTime timestamp,
 
-    @Schema(description = "Código HTTP do erro")
+    @Schema(description = "Codigo HTTP do erro")
     int status,
 
     @Schema(description = "Tipo do erro")
@@ -20,14 +20,17 @@ public record ErrorResponse(
     @Schema(description = "Mensagem descritiva do erro")
     String message,
 
-    @Schema(description = "Caminho da requisição que gerou o erro")
+    @Schema(description = "Caminho da requisicao que gerou o erro")
     String path,
 
-    @Schema(description = "Lista de erros de campo (validação)")
+    @Schema(description = "Correlation/request id da requisicao")
+    String requestId,
+
+    @Schema(description = "Lista de erros de campo (validacao)")
     List<FieldError> fieldErrors
 ) {
 
-    @Schema(description = "Erro de validação em campo específico")
+    @Schema(description = "Erro de validacao em campo especifico")
     public record FieldError(
 
         @Schema(description = "Nome do campo com erro")

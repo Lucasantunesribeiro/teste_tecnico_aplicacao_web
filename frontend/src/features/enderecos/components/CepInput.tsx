@@ -19,6 +19,7 @@ export function CepInput({ value, onChange, onCepFound, error }: Props) {
   // Callback ref pattern: mantém a referência atualizada sem re-acionar o useEffect
   // a cada render do componente pai, evitando consultas duplicadas ao CEP.
   const onCepFoundRef = useRef(onCepFound)
+  const lastQueriedCepRef = useRef<string | null>(null)
   useEffect(() => {
     onCepFoundRef.current = onCepFound
   })
@@ -30,11 +31,20 @@ export function CepInput({ value, onChange, onCepFound, error }: Props) {
 
   useEffect(() => {
     const clean = cleanCEP(value)
-    if (clean.length === 8) {
-      mutate(clean, {
-        onSuccess: (data) => onCepFoundRef.current(data),
-      })
+    if (clean.length !== 8) {
+      lastQueriedCepRef.current = null
+      return
     }
+
+    if (lastQueriedCepRef.current === clean) return
+    lastQueriedCepRef.current = clean
+
+    mutate(clean, {
+      onSuccess: (data) => onCepFoundRef.current(data),
+      onError: () => {
+        lastQueriedCepRef.current = null
+      },
+    })
   }, [value, mutate])
 
   return (

@@ -4,24 +4,21 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.UUID;
 
-@Schema(description = "Resposta de autenticação com token JWT")
+@Schema(description = "Resposta de autenticacao ou sessao atual")
 public record LoginResponse(
 
-    @Schema(description = "Token JWT de acesso")
-    String token,
-
-    @Schema(description = "Tempo de expiração do token em segundos")
+    @Schema(description = "Tempo de expiracao do access token em segundos")
     long expiresIn,
 
-    @Schema(description = "ID do usuário autenticado")
+    @Schema(description = "ID do usuario autenticado")
     UUID userId,
 
-    @Schema(description = "Nome do usuário autenticado")
+    @Schema(description = "Nome do usuario autenticado")
     String nome,
 
-    @Schema(description = "CPF do usuário autenticado")
+    @Schema(description = "CPF do usuario autenticado")
     String cpf,
 
-    @Schema(description = "Tipo/perfil do usuário")
+    @Schema(description = "Tipo/perfil do usuario")
     String tipo
 ) {}

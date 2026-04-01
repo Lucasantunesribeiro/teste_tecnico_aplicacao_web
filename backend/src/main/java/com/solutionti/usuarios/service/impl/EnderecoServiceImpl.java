@@ -14,10 +14,15 @@ import com.solutionti.usuarios.repository.UsuarioRepository;
 import com.solutionti.usuarios.security.SecurityUtils;
 import com.solutionti.usuarios.service.CepService;
 import com.solutionti.usuarios.service.EnderecoService;
+import jakarta.persistence.criteria.JoinType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.UUID;
@@ -35,12 +40,12 @@ public class EnderecoServiceImpl implements EnderecoService {
     @Override
     @Transactional
     public EnderecoResponse criar(UUID usuarioId, EnderecoRequest request) {
-        log.info("Criando endereço para usuário ID: {}", usuarioId);
+        log.info("Criando endereco para usuario ID: {}", usuarioId);
 
         verificarPermissaoUsuario(usuarioId);
 
         Usuario usuario = usuarioRepository.findById(usuarioId)
-            .orElseThrow(() -> new NotFoundException("Usuário não encontrado"));
+            .orElseThrow(() -> new NotFoundException("Usuario nao encontrado"));
 
         CepResponse cepData = cepService.consultarCep(request.cep());
 
@@ -58,7 +63,7 @@ public class EnderecoServiceImpl implements EnderecoService {
         }
 
         Endereco saved = enderecoRepository.save(endereco);
-        log.info("Endereço criado com ID: {} para usuário ID: {}", saved.getId(), usuarioId);
+        log.info("Endereco criado com ID: {} para usuario ID: {}", saved.getId(), usuarioId);
 
         return enderecoMapper.toResponse(saved);
     }
@@ -66,12 +71,12 @@ public class EnderecoServiceImpl implements EnderecoService {
     @Override
     @Transactional(readOnly = true)
     public List<EnderecoResponse> listarPorUsuario(UUID usuarioId) {
-        log.debug("Listando endereços do usuário ID: {}", usuarioId);
+        log.debug("Listando enderecos do usuario ID: {}", usuarioId);
 
         verificarPermissaoUsuario(usuarioId);
 
         if (!usuarioRepository.existsById(usuarioId)) {
-            throw new NotFoundException("Usuário não encontrado");
+            throw new NotFoundException("Usuario nao encontrado");
         }
 
         List<Endereco> enderecos = enderecoRepository.findByUsuarioIdOrderByPrincipalDesc(usuarioId);
@@ -80,8 +85,23 @@ public class EnderecoServiceImpl implements EnderecoService {
 
     @Override
     @Transactional(readOnly = true)
+    public Page<EnderecoResponse> listarTodos(UUID usuarioId,
+                                              Boolean principal,
+                                              String cep,
+                                              String cidade,
+                                              String estado,
+                                              Pageable pageable) {
+        requireAdmin();
+        Specification<Endereco> spec = buildSearchSpecification(usuarioId, principal, cep, cidade, estado);
+
+        return enderecoRepository.findAll(spec, pageable)
+            .map(enderecoMapper::toResponse);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public EnderecoResponse buscarPorId(UUID id) {
-        log.debug("Buscando endereço ID: {}", id);
+        log.debug("Buscando endereco ID: {}", id);
 
         Endereco endereco = findEnderecoOrThrow(id);
         verificarPermissaoUsuario(endereco.getUsuario().getId());
@@ -92,7 +112,7 @@ public class EnderecoServiceImpl implements EnderecoService {
     @Override
     @Transactional
     public EnderecoResponse atualizar(UUID id, AtualizarEnderecoRequest request) {
-        log.info("Atualizando endereço ID: {}", id);
+        log.info("Atualizando endereco ID: {}", id);
 
         Endereco endereco = findEnderecoOrThrow(id);
         verificarPermissaoUsuario(endereco.getUsuario().getId());
@@ -115,7 +135,7 @@ public class EnderecoServiceImpl implements EnderecoService {
         }
 
         Endereco updated = enderecoRepository.save(endereco);
-        log.info("Endereço ID: {} atualizado com sucesso", id);
+        log.info("Endereco ID: {} atualizado com sucesso", id);
 
         return enderecoMapper.toResponse(updated);
     }
@@ -123,7 +143,7 @@ public class EnderecoServiceImpl implements EnderecoService {
     @Override
     @Transactional
     public void deletar(UUID id) {
-        log.info("Deletando endereço ID: {}", id);
+        log.info("Deletando endereco ID: {}", id);
 
         Endereco endereco = findEnderecoOrThrow(id);
         UUID usuarioId = endereco.getUsuario().getId();
@@ -137,44 +157,96 @@ public class EnderecoServiceImpl implements EnderecoService {
                 .ifPresent(maisAntigo -> {
                     maisAntigo.tornarPrincipal();
                     enderecoRepository.save(maisAntigo);
-                    log.info("Endereço ID: {} promovido a principal após exclusão", maisAntigo.getId());
+                    log.info("Endereco ID: {} promovido a principal apos exclusao", maisAntigo.getId());
                 });
         }
 
-        log.info("Endereço ID: {} deletado com sucesso", id);
+        log.info("Endereco ID: {} deletado com sucesso", id);
     }
 
     @Override
     @Transactional
     public EnderecoResponse definirComoPrincipal(UUID id) {
-        log.info("Definindo endereço ID: {} como principal", id);
+        log.info("Definindo endereco ID: {} como principal", id);
 
         Endereco endereco = findEnderecoOrThrow(id);
         UUID usuarioId = endereco.getUsuario().getId();
         verificarPermissaoUsuario(usuarioId);
 
-        // Pessimistic lock em todos os endereços do usuário para evitar race condition:
-        // impede que duas requisições simultâneas marquem dois endereços como principal.
-        // O índice parcial único no banco é a última barreira; este lock previne a
-        // exceção de constraint chegando ao cliente.
         enderecoRepository.findByUsuarioIdForUpdate(usuarioId);
 
         enderecoRepository.desmarcarPrincipalPorUsuario(usuarioId);
         endereco.tornarPrincipal();
         Endereco updated = enderecoRepository.save(endereco);
 
-        log.info("Endereço ID: {} definido como principal para usuário ID: {}", id, usuarioId);
+        log.info("Endereco ID: {} definido como principal para usuario ID: {}", id, usuarioId);
         return enderecoMapper.toResponse(updated);
     }
 
     private Endereco findEnderecoOrThrow(UUID id) {
         return enderecoRepository.findById(id)
-            .orElseThrow(() -> new NotFoundException("Endereço não encontrado"));
+            .orElseThrow(() -> new NotFoundException("Endereco nao encontrado"));
     }
 
     private void verificarPermissaoUsuario(UUID usuarioId) {
         if (!SecurityUtils.isAdmin() && !SecurityUtils.isOwner(usuarioId)) {
-            throw new ForbiddenException("Acesso negado: você não tem permissão para acessar dados deste usuário");
+            log.warn("Acesso negado para operacao em endereco do usuario ID: {}", usuarioId);
+            throw new ForbiddenException("Acesso negado: voce nao tem permissao para acessar dados deste usuario");
         }
+    }
+
+    private void requireAdmin() {
+        if (!SecurityUtils.isAdmin()) {
+            log.warn("Acesso negado para listagem global de enderecos: usuario sem perfil ADMIN");
+            throw new ForbiddenException("Acesso negado: apenas administradores podem listar todos os enderecos");
+        }
+    }
+
+    private Specification<Endereco> buildSearchSpecification(UUID usuarioId,
+                                                             Boolean principal,
+                                                             String cep,
+                                                             String cidade,
+                                                             String estado) {
+        return (root, query, criteriaBuilder) -> {
+            if (!Long.class.equals(query.getResultType()) && !long.class.equals(query.getResultType())) {
+                root.fetch("usuario", JoinType.INNER);
+                query.distinct(true);
+            }
+
+            var predicates = criteriaBuilder.conjunction();
+
+            if (usuarioId != null) {
+                predicates = criteriaBuilder.and(predicates,
+                    criteriaBuilder.equal(root.get("usuario").get("id"), usuarioId));
+            }
+
+            if (principal != null) {
+                predicates = criteriaBuilder.and(predicates,
+                    criteriaBuilder.equal(root.get("principal"), principal));
+            }
+
+            if (StringUtils.hasText(cep)) {
+                predicates = criteriaBuilder.and(predicates,
+                    criteriaBuilder.equal(root.get("cep"), cep.trim()));
+            }
+
+            if (StringUtils.hasText(cidade)) {
+                predicates = criteriaBuilder.and(predicates,
+                    criteriaBuilder.like(
+                        criteriaBuilder.lower(root.get("cidade")),
+                        "%" + cidade.trim().toLowerCase() + "%"
+                    ));
+            }
+
+            if (StringUtils.hasText(estado)) {
+                predicates = criteriaBuilder.and(predicates,
+                    criteriaBuilder.equal(
+                        criteriaBuilder.upper(root.get("estado")),
+                        estado.trim().toUpperCase()
+                    ));
+            }
+
+            return predicates;
+        };
     }
 }

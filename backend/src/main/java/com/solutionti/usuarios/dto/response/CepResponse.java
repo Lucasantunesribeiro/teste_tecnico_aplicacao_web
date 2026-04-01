@@ -1,8 +1,9 @@
 package com.solutionti.usuarios.dto.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.io.Serializable;
 
-@Schema(description = "Dados de endereço retornados pela consulta de CEP (ViaCEP)")
+@Schema(description = "Dados de endereco retornados pela consulta de CEP (ViaCEP)")
 public record CepResponse(
 
     @Schema(description = "CEP consultado")
@@ -23,9 +24,9 @@ public record CepResponse(
     @Schema(description = "UF (estado)")
     String uf,
 
-    @Schema(description = "Código IBGE do município")
+    @Schema(description = "Codigo IBGE do municipio")
     String ibge,
 
-    @Schema(description = "Indica erro na consulta (CEP não encontrado)")
+    @Schema(description = "Indica erro na consulta (CEP nao encontrado)")
     Boolean erro
-) {}
+) implements Serializable {}

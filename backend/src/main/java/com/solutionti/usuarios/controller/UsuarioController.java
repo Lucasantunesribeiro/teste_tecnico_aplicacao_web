@@ -1,5 +1,7 @@
 package com.solutionti.usuarios.controller;
 
+import com.solutionti.usuarios.dto.request.AlterarSenhaRequest;
+import com.solutionti.usuarios.dto.request.AtualizarUsuarioRequest;
 import com.solutionti.usuarios.dto.request.UsuarioRequest;
 import com.solutionti.usuarios.dto.response.ErrorResponse;
 import com.solutionti.usuarios.dto.response.UsuarioResponse;
@@ -14,6 +16,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -21,6 +24,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -41,6 +45,7 @@ public class UsuarioController {
     private final UsuarioService usuarioService;
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Criar usuário", description = "Cria um novo usuário no sistema (apenas ADMIN)")
     @ApiResponses({
         @ApiResponse(responseCode = "201", description = "Usuário criado com sucesso",
@@ -57,6 +62,7 @@ public class UsuarioController {
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Listar usuários", description = "Lista todos os usuários com paginação (apenas ADMIN)")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso"),
@@ -87,7 +93,8 @@ public class UsuarioController {
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "Atualizar usuário", description = "Atualiza os dados de um usuário (ADMIN ou próprio usuário)")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Atualizar usuário", description = "Atualiza os dados de um usuário (apenas ADMIN). Para alterar somente a senha use PATCH /{id}/senha")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Usuário atualizado com sucesso",
             content = @Content(schema = @Schema(implementation = UsuarioResponse.class))),
@@ -99,13 +106,14 @@ public class UsuarioController {
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     public ResponseEntity<UsuarioResponse> atualizar(@PathVariable UUID id,
-                                                      @RequestBody @Valid UsuarioRequest request) {
+                                                      @RequestBody @Valid AtualizarUsuarioRequest request) {
         log.info("Requisição para atualizar usuário ID: {}", id);
         UsuarioResponse response = usuarioService.atualizar(id, request);
         return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Deletar usuário", description = "Remove um usuário do sistema (apenas ADMIN)")
     @ApiResponses({
         @ApiResponse(responseCode = "204", description = "Usuário deletado com sucesso"),
@@ -117,6 +125,24 @@ public class UsuarioController {
     public ResponseEntity<Void> deletar(@PathVariable UUID id) {
         log.info("Requisição para deletar usuário ID: {}", id);
         usuarioService.deletar(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/senha")
+    @Operation(summary = "Alterar senha", description = "USER altera a própria senha (exige senhaAtual). ADMIN redefine qualquer senha sem confirmação.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Senha alterada com sucesso"),
+        @ApiResponse(responseCode = "400", description = "Senha atual incorreta ou nova senha inválida",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(responseCode = "403", description = "Acesso negado",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(responseCode = "404", description = "Usuário não encontrado",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public ResponseEntity<Void> alterarSenha(@PathVariable UUID id,
+                                              @RequestBody @Valid AlterarSenhaRequest request) {
+        log.info("Requisição para alterar senha do usuário ID: {}", id);
+        usuarioService.alterarSenha(id, request);
         return ResponseEntity.noContent().build();
     }
 }

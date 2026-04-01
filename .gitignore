@@ -24,6 +24,7 @@ frontend/dist/
 frontend/.vite/
 frontend/coverage/
 frontend/*.log
+frontend/*.tsbuildinfo
 frontend/.env.local
 frontend/.env.production
 

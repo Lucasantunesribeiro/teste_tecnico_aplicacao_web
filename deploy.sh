@@ -43,7 +43,7 @@ set -a
 source .env
 set +a
 
-required_vars=("JWT_SECRET" "DB_PASS" "DB_HOST" "DB_USER" "DB_NAME")
+required_vars=("JWT_SECRET" "DB_PASS" "DB_HOST" "DB_USER" "DB_NAME" "REDIS_PASSWORD")
 missing=()
 
 for var in "${required_vars[@]}"; do
@@ -88,6 +88,9 @@ sleep 15
 echo "==> Service status:"
 docker compose -f "$COMPOSE_FILE" -p "$PROJECT_NAME" ps
 
+echo "==> Checking backend health..."
+docker compose -f "$COMPOSE_FILE" -p "$PROJECT_NAME" exec -T backend sh -lc "wget -qO- http://localhost:8080/actuator/health" >/dev/null
+
 echo ""
 echo "Deploy complete! Application running at http://localhost"
-echo "Backend health: http://localhost/api/actuator/health"
+echo "Backend health checked via internal container request to http://localhost:8080/actuator/health"

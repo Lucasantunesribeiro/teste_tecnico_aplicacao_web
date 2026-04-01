@@ -1,5 +1,7 @@
 package com.solutionti.usuarios.service;
 
+import com.solutionti.usuarios.dto.request.AlterarSenhaRequest;
+import com.solutionti.usuarios.dto.request.AtualizarUsuarioRequest;
 import com.solutionti.usuarios.dto.request.UsuarioRequest;
 import com.solutionti.usuarios.dto.response.UsuarioResponse;
 import org.springframework.data.domain.Page;
@@ -15,7 +17,9 @@ public interface UsuarioService {
 
     Page<UsuarioResponse> listarTodos(Pageable pageable);
 
-    UsuarioResponse atualizar(UUID id, UsuarioRequest request);
+    UsuarioResponse atualizar(UUID id, AtualizarUsuarioRequest request);
+
+    void alterarSenha(UUID id, AlterarSenhaRequest request);
 
     void deletar(UUID id);
 }

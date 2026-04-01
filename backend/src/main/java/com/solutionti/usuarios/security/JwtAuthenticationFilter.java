@@ -2,6 +2,7 @@ package com.solutionti.usuarios.security;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -29,35 +30,46 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
         try {
-            String token = extractTokenFromRequest(request);
+            String token = extractAccessToken(request);
 
-            if (StringUtils.hasText(token) && jwtTokenProvider.validateToken(token)) {
+            if (StringUtils.hasText(token) && jwtTokenProvider.validateAccessToken(token)) {
                 String userId = jwtTokenProvider.getUserIdFromToken(token);
                 UserDetails userDetails = userDetailsService.loadUserByUsername(userId);
 
                 if (!userDetails.isEnabled()) {
-                    log.warn("Token válido mas usuário inativo: {}", userId);
+                    log.warn("Token valido mas usuario inativo: {}", userId);
                 } else {
                     UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
                     SecurityContextHolder.getContext().setAuthentication(authentication);
-                    log.debug("Autenticação definida para o usuário: {}", userId);
+                    log.debug("Autenticacao definida para o usuario: {}", userId);
                 }
             }
         } catch (Exception e) {
-            log.error("Erro ao processar autenticação JWT: {}", e.getMessage());
+            log.error("Erro ao processar autenticacao JWT: {}", e.getMessage());
         }
 
         filterChain.doFilter(request, response);
     }
 
-    private String extractTokenFromRequest(HttpServletRequest request) {
+    private String extractAccessToken(HttpServletRequest request) {
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                if (AuthCookieService.ACCESS_COOKIE_NAME.equals(cookie.getName())
+                    && StringUtils.hasText(cookie.getValue())) {
+                    return cookie.getValue();
+                }
+            }
+        }
+
         String bearerToken = request.getHeader("Authorization");
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
             return bearerToken.substring(7);
         }
+
         return null;
     }
 }

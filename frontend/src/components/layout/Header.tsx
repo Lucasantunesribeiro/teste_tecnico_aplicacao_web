@@ -1,5 +1,6 @@
-import { LogOut, Users, MapPin, LayoutDashboard } from 'lucide-react'
+import { ClipboardList, LayoutDashboard, LogOut, MapPin, Users } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -9,12 +10,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, adminOnly: false },
   { to: '/enderecos', label: 'Endereços', icon: MapPin, adminOnly: false },
+  { to: '/enderecos/admin', label: 'Auditoria', icon: ClipboardList, adminOnly: true },
   { to: '/usuarios', label: 'Usuários', icon: Users, adminOnly: true },
 ]
 
@@ -25,27 +26,23 @@ export function Header() {
   const initials = user?.nome
     .split(' ')
     .slice(0, 2)
-    .map((n) => n[0])
+    .map((name) => name[0])
     .join('')
     .toUpperCase() ?? 'U'
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 items-center gap-4">
-        <span className="font-semibold hidden sm:inline-block">GestãoUser</span>
-        <nav className="flex items-center gap-1 flex-1">
+        <span className="hidden font-semibold sm:inline-block">GestãoUser</span>
+        <nav className="flex flex-1 items-center gap-1">
           {navItems
             .filter((item) => !item.adminOnly || isAdmin)
             .map((item) => {
               const Icon = item.icon
               const active = location.pathname === item.to
+
               return (
-                <Button
-                  key={item.to}
-                  variant={active ? 'secondary' : 'ghost'}
-                  size="sm"
-                  asChild
-                >
+                <Button key={item.to} variant={active ? 'secondary' : 'ghost'} size="sm" asChild>
                   <Link to={item.to} className="flex items-center gap-2">
                     <Icon className="h-4 w-4" />
                     <span className="hidden sm:inline">{item.label}</span>
@@ -56,7 +53,11 @@ export function Header() {
         </nav>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+            <Button
+              variant="ghost"
+              className="relative h-8 w-8 rounded-full"
+              data-testid="user-menu-trigger"
+            >
               <Avatar className="h-8 w-8">
                 <AvatarFallback>{initials}</AvatarFallback>
               </Avatar>
@@ -70,7 +71,13 @@ export function Header() {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={logout} className="text-destructive">
+            <DropdownMenuItem
+              onClick={() => {
+                void logout()
+              }}
+              className="text-destructive"
+              data-testid="logout-button"
+            >
               <LogOut className="mr-2 h-4 w-4" />
               Sair
             </DropdownMenuItem>

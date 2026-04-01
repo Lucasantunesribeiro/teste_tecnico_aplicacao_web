@@ -7,7 +7,7 @@ interface Props {
 }
 
 export function EnderecoList({ usuarioId }: Props) {
-  const { data: enderecos, isLoading } = useEnderecos(usuarioId)
+  const { data: enderecos, isLoading, isError } = useEnderecos(usuarioId)
 
   if (isLoading) {
     return (
@@ -17,8 +17,20 @@ export function EnderecoList({ usuarioId }: Props) {
     )
   }
 
+  if (isError) {
+    return (
+      <p className="rounded-md border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+        Não foi possível carregar os endereços.
+      </p>
+    )
+  }
+
   if (!enderecos?.length) {
-    return <p className="text-sm text-muted-foreground text-center py-4">Nenhum endereço cadastrado.</p>
+    return (
+      <p className="py-4 text-center text-sm text-muted-foreground">
+        Nenhum endereço cadastrado.
+      </p>
+    )
   }
 
   return (

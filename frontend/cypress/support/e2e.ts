@@ -1,2 +1,2 @@
 // Import commands
-import './commands'
+import './commands.ts'

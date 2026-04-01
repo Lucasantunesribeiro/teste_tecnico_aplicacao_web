@@ -1,4 +1,5 @@
-import { User, Trash2 } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { User, Trash2, ArrowRight } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -13,9 +14,9 @@ interface Props {
 
 export function UsuarioCard({ usuario, onDelete, canDelete }: Props) {
   return (
-    <Card>
+    <Card className="overflow-hidden">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-base font-semibold flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2 text-base font-semibold">
           <User className="h-4 w-4" />
           {usuario.nome}
         </CardTitle>
@@ -32,15 +33,24 @@ export function UsuarioCard({ usuario, onDelete, canDelete }: Props) {
               size="icon"
               className="h-8 w-8 text-destructive"
               onClick={() => onDelete(usuario.id)}
+              aria-label={`Excluir usuário ${usuario.nome}`}
             >
               <Trash2 className="h-4 w-4" />
             </Button>
           )}
         </div>
       </CardHeader>
-      <CardContent className="text-sm text-muted-foreground space-y-1">
-        <p>CPF: {formatCPF(usuario.cpf)}</p>
-        <p>Nascimento: {formatDate(usuario.dataNascimento)}</p>
+      <CardContent className="space-y-3 text-sm text-muted-foreground">
+        <div>
+          <p>CPF: {formatCPF(usuario.cpf)}</p>
+          <p>Nascimento: {formatDate(usuario.dataNascimento)}</p>
+        </div>
+        <Button variant="ghost" className="w-full justify-between" asChild>
+          <Link to={`/usuarios/${usuario.id}`}>
+            Ver detalhes
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </Button>
       </CardContent>
     </Card>
   )

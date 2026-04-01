@@ -19,9 +19,9 @@ public class ViaCepServiceImpl implements CepService {
     private final RestTemplate restTemplate;
 
     @Override
-    @Cacheable(value = "ceps", key = "#cep")
+    @Cacheable(value = "ceps", key = "T(com.solutionti.usuarios.service.impl.ViaCepServiceImpl).normalizeCep(#cep)")
     public CepResponse consultarCep(String cep) {
-        String cepDigits = cep.replaceAll("\\D", "");
+        String cepDigits = normalizeCep(cep);
         log.info("Consultando CEP: {}", cepDigits);
 
         if (cepDigits.length() != 8) {
@@ -48,5 +48,9 @@ public class ViaCepServiceImpl implements CepService {
             log.error("Erro ao consultar CEP {}: {}", cepDigits, e.getMessage());
             throw new BusinessException("Erro ao consultar o serviço de CEP");
         }
+    }
+
+    public static String normalizeCep(String cep) {
+        return cep == null ? "" : cep.replaceAll("\\D", "");
     }
 }

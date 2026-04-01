@@ -6,12 +6,12 @@ import { useAuthStore } from '../store/authStore'
 
 export function useLogin() {
   const navigate = useNavigate()
-  const login = useAuthStore((s) => s.login)
+  const setSession = useAuthStore((s) => s.setSession)
 
   return useMutation({
     mutationFn: authService.login,
     onSuccess: (data) => {
-      login(data)
+      setSession(data)
       toast.success(`Bem-vindo, ${data.nome}!`)
       navigate('/dashboard')
     },

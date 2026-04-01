@@ -11,8 +11,7 @@ export interface LoginRequest {
   senha: string
 }
 
-export interface LoginResponse {
-  token: string
+export interface SessionResponse {
   expiresIn: number
   userId: string
   nome: string
@@ -20,10 +19,14 @@ export interface LoginResponse {
   tipo: 'ADMIN' | 'USER'
 }
 
+export type LoginResponse = SessionResponse
+
 export interface AuthState {
   user: User | null
-  token: string | null
   isAuthenticated: boolean
-  login: (response: LoginResponse) => void
-  logout: () => void
+  isBootstrapping: boolean
+  hasHydratedSession: boolean
+  setSession: (response: SessionResponse) => void
+  hydrate: (response: SessionResponse | null) => void
+  clearSession: () => void
 }

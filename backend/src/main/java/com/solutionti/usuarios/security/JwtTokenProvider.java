@@ -22,27 +22,32 @@ import java.util.Map;
 @Slf4j
 public class JwtTokenProvider {
 
+    private static final String TOKEN_TYPE = "type";
+    private static final String ACCESS_TOKEN = "access";
+
     @Value("${jwt.secret}")
     private String jwtSecret;
 
-    @Value("${jwt.expiration:86400000}")
-    private long jwtExpiration;
+    @Value("${jwt.access-expiration:${jwt.expiration:900000}}")
+    private long accessTokenExpiration;
 
     private SecretKey getSigningKey() {
         byte[] keyBytes = Decoders.BASE64.decode(jwtSecret);
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public String generateToken(Usuario usuario) {
+    public String generateAccessToken(Usuario usuario) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("role", usuario.getTipo().name());
         claims.put("nome", usuario.getNome());
+        claims.put(TOKEN_TYPE, ACCESS_TOKEN);
+
         Date now = new Date();
         return Jwts.builder()
             .claims(claims)
             .subject(usuario.getId().toString())
             .issuedAt(now)
-            .expiration(new Date(now.getTime() + jwtExpiration))
+            .expiration(new Date(now.getTime() + accessTokenExpiration))
             .signWith(getSigningKey(), Jwts.SIG.HS256)
             .compact();
     }
@@ -51,30 +56,26 @@ public class JwtTokenProvider {
         return getClaims(token).getSubject();
     }
 
-    public String getRoleFromToken(String token) {
-        return getClaims(token).get("role", String.class);
-    }
-
-    public boolean validateToken(String token) {
+    public boolean validateAccessToken(String token) {
         try {
-            Jwts.parser().verifyWith(getSigningKey()).build().parseSignedClaims(token);
-            return true;
+            Claims claims = Jwts.parser().verifyWith(getSigningKey()).build().parseSignedClaims(token).getPayload();
+            return ACCESS_TOKEN.equals(claims.get(TOKEN_TYPE, String.class));
         } catch (ExpiredJwtException e) {
             log.warn("Token JWT expirado: {}", e.getMessage());
         } catch (MalformedJwtException e) {
             log.warn("Token JWT malformado: {}", e.getMessage());
         } catch (UnsupportedJwtException e) {
-            log.warn("Token JWT não suportado: {}", e.getMessage());
+            log.warn("Token JWT nao suportado: {}", e.getMessage());
         } catch (SignatureException e) {
-            log.warn("Assinatura JWT inválida: {}", e.getMessage());
+            log.warn("Assinatura JWT invalida: {}", e.getMessage());
         } catch (IllegalArgumentException e) {
             log.warn("Claims JWT vazio ou nulo: {}", e.getMessage());
         }
         return false;
     }
 
-    public long getExpirationTime() {
-        return jwtExpiration / 1000;
+    public long getAccessTokenExpirationSeconds() {
+        return accessTokenExpiration / 1000;
     }
 
     private Claims getClaims(String token) {

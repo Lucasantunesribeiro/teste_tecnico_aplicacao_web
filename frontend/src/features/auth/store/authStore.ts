@@ -1,32 +1,40 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
-import type { AuthState, LoginResponse } from '../types/auth.types'
+import type { AuthState, SessionResponse, User } from '../types/auth.types'
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set) => ({
-      user: null,
-      token: null,
-      isAuthenticated: false,
-      login: (response: LoginResponse) =>
-        set({
-          user: {
-            id: response.userId,
-            nome: response.nome,
-            cpf: response.cpf,
-            tipo: response.tipo,
-            status: 'ATIVO',
-          },
-          token: response.token,
-          isAuthenticated: true,
-        }),
-      logout: () =>
-        set({
-          user: null,
-          token: null,
-          isAuthenticated: false,
-        }),
+function toUser(response: SessionResponse): User {
+  return {
+    id: response.userId,
+    nome: response.nome,
+    cpf: response.cpf,
+    tipo: response.tipo,
+    status: 'ATIVO',
+  }
+}
+
+export const useAuthStore = create<AuthState>()((set) => ({
+  user: null,
+  isAuthenticated: false,
+  isBootstrapping: true,
+  hasHydratedSession: false,
+  setSession: (response) =>
+    set({
+      user: toUser(response),
+      isAuthenticated: true,
+      isBootstrapping: false,
+      hasHydratedSession: true,
     }),
-    { name: 'auth-storage' }
-  )
-)
+  hydrate: (response) =>
+    set({
+      user: response ? toUser(response) : null,
+      isAuthenticated: !!response,
+      isBootstrapping: false,
+      hasHydratedSession: true,
+    }),
+  clearSession: () =>
+    set({
+      user: null,
+      isAuthenticated: false,
+      isBootstrapping: false,
+      hasHydratedSession: true,
+    }),
+}))
