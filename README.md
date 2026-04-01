@@ -1,6 +1,12 @@
-# Sistema de Gerenciamento de Usuarios - Solution TI
+# Sistema de Gerenciamento de Usuarios — Solution TI
 
-Sistema fullstack para cadastro de usuarios e gerenciamento de enderecos, com autenticacao JWT, consulta de CEP via ViaCEP e cache Redis no backend.
+[![CI](https://github.com/Lucasantunesribeiro/teste_tecnico_aplicacao_web/actions/workflows/ci.yml/badge.svg)](https://github.com/Lucasantunesribeiro/teste_tecnico_aplicacao_web/actions/workflows/ci.yml)
+[![Security](https://github.com/Lucasantunesribeiro/teste_tecnico_aplicacao_web/actions/workflows/security.yml/badge.svg)](https://github.com/Lucasantunesribeiro/teste_tecnico_aplicacao_web/actions/workflows/security.yml)
+[![CodeQL](https://github.com/Lucasantunesribeiro/teste_tecnico_aplicacao_web/actions/workflows/codeql.yml/badge.svg)](https://github.com/Lucasantunesribeiro/teste_tecnico_aplicacao_web/actions/workflows/codeql.yml)
+
+Sistema fullstack para cadastro de usuarios e gerenciamento de enderecos, com autenticacao via **cookies httpOnly**, CSRF protection, cache Redis, consulta de CEP via ViaCEP e pipeline de seguranca completo.
+
+---
 
 ## Stack
 
@@ -8,46 +14,64 @@ Sistema fullstack para cadastro de usuarios e gerenciamento de enderecos, com au
 |--------|-------------|
 | Backend | Java 17, Spring Boot 3.2, Spring Security 6, JWT, MapStruct |
 | Banco de dados | PostgreSQL 16, Redis 7 |
-| Frontend | React 18, TypeScript, Vite 5, TanStack Query v5, Zustand, React Hook Form + Zod |
+| Frontend | React 18, TypeScript, Vite, TanStack Query v5, Zustand, React Hook Form + Zod |
 | UI | shadcn/ui, Tailwind CSS, Radix UI, Lucide React |
 | Testes | JUnit 5, Mockito, Testcontainers, Vitest, Cypress |
-| Infra | Docker, Docker Compose |
+| Infra | Docker, Docker Compose, GitHub Actions |
+| Seguranca | Gitleaks, CodeQL (SAST), OWASP Dependency Check, Trivy (image scan) |
+
+---
 
 ## Funcionalidades
 
-- Autenticacao JWT stateless
-- Cadastro e listagem de usuarios com RBAC
+- Autenticacao JWT em **cookies httpOnly** — token nao acessivel ao JavaScript do browser
+- Protecao CSRF com double-submit cookie e XOR masking por request
+- Cadastro e listagem de usuarios com RBAC (ADMIN / USER)
+- Alteracao de senha pelo proprio usuario com confirmacao da senha atual
 - CRUD de enderecos com endereco principal unico por usuario
-- Preenchimento automatico por CEP usando ViaCEP
-- Cache de CEP no backend para evitar consultas repetidas
+- Promocao automatica de outro endereco ao remover o principal
+- Preenchimento automatico por CEP usando ViaCEP com cache Redis
 - Dashboard com visoes diferentes para admin e usuario comum
-- Swagger/OpenAPI no ambiente de desenvolvimento
+- Listagem global de enderecos paginada para admin
+- Rate limiting no login por IP (Bucket4j)
+- Correlation ID (MDC) em todos os requests para rastreabilidade
+- Swagger/OpenAPI disponivel no ambiente de desenvolvimento
+
+---
 
 ## Quick Start com Docker
 
 ```bash
 cp .env.example .env
-# preencha JWT_SECRET e DB_PASS
+# edite .env e defina JWT_SECRET e DB_PASS
 
 docker compose up -d --build
 ```
 
-Acessos locais:
+| Servico | URL |
+|---------|-----|
+| Aplicacao | `http://localhost` |
+| Swagger | `http://localhost:8080/swagger-ui.html` |
+| Health | `http://localhost:8080/actuator/health` |
+| Frontend dev (sem Docker) | `http://localhost:5173` |
 
-- Aplicacao: `http://localhost`
-- Frontend dev: `http://localhost:5173`
-- Swagger: `http://localhost:8080/swagger-ui.html`
-- Healthcheck: `http://localhost:8080/actuator/health`
+### Credenciais de teste
+
+| Perfil | CPF | Senha |
+|--------|-----|-------|
+| Admin | `529.982.247-25` | `Admin123!` |
+| Usuario | `390.533.447-05` | `User123!` |
+
+---
 
 ## Desenvolvimento local
 
 ### Backend
 
-No diretorio `app/`:
-
 ```bash
 cp .env.example .env
 docker compose up postgres redis -d
+
 cd backend
 mvn spring-boot:run
 ```
@@ -56,80 +80,90 @@ API disponivel em `http://localhost:8080`.
 
 ### Frontend
 
-No diretorio `app/`:
-
 ```bash
 cd frontend
 npm ci
 npm run dev
 ```
 
-Frontend disponivel em `http://localhost:5173`.
+Frontend disponivel em `http://localhost:5173` (proxy `/api/*` → `:8080`).
 
-## Credenciais de teste
-
-| Perfil | CPF | Senha |
-|--------|-----|-------|
-| Admin | `529.982.247-25` | `Admin123!` |
-| Usuario | `390.533.447-05` | `User123!` |
-
-## Estrutura
-
-```text
-app/
-|-- backend/
-|   |-- src/main/java/com/solutionti/usuarios/
-|   |   |-- controller/
-|   |   |-- service/
-|   |   |-- repository/
-|   |   |-- entity/
-|   |   |-- dto/
-|   |   |-- mapper/
-|   |   |-- security/
-|   |   |-- validator/
-|   |   `-- exception/
-|   `-- src/main/resources/db/migration/
-|-- frontend/
-|   `-- src/
-|       |-- components/
-|       |-- features/
-|       |-- lib/
-|       |-- pages/
-|       `-- routes/
-|-- docker-compose.yml
-|-- docker-compose.prod.yml
-|-- deploy.sh
-`-- .env.example
-```
+---
 
 ## API
 
+### Autenticacao (`/api/auth`)
+
 | Metodo | Endpoint | Acesso | Descricao |
 |--------|----------|--------|-----------|
-| `POST` | `/api/auth/login` | Publico | Login com CPF e senha |
-| `GET` | `/api/usuarios` | ADMIN | Listar usuarios |
+| `POST` | `/api/auth/login` | Publico | Login com CPF e senha; define cookies ACCESS\_TOKEN e REFRESH\_TOKEN |
+| `POST` | `/api/auth/refresh` | Cookie refresh | Emite novo access token |
+| `POST` | `/api/auth/logout` | Autenticado | Invalida sessao e limpa cookies |
+| `GET` | `/api/auth/me` | Autenticado | Retorna userId, cpf e role do token atual |
+
+### Usuarios (`/api/usuarios`)
+
+| Metodo | Endpoint | Acesso | Descricao |
+|--------|----------|--------|-----------|
+| `GET` | `/api/usuarios` | ADMIN | Listar usuarios paginados |
 | `POST` | `/api/usuarios` | ADMIN | Criar usuario |
-| `GET` | `/api/usuarios/{id}` | Proprio ou ADMIN | Buscar usuario |
-| `PUT` | `/api/usuarios/{id}` | ADMIN | Atualizar usuario |
+| `GET` | `/api/usuarios/{id}` | Proprio ou ADMIN | Buscar usuario por ID |
+| `PUT` | `/api/usuarios/{id}` | ADMIN | Atualizar dados do usuario (senha opcional) |
+| `PATCH` | `/api/usuarios/{id}/senha` | Proprio ou ADMIN | Alterar senha — USER exige `senhaAtual`; ADMIN redefine sem confirmacao |
 | `DELETE` | `/api/usuarios/{id}` | ADMIN | Deletar usuario |
-| `GET` | `/api/enderecos/usuario/{usuarioId}` | Proprio ou ADMIN | Listar enderecos do usuario |
+
+### Enderecos (`/api/enderecos`)
+
+| Metodo | Endpoint | Acesso | Descricao |
+|--------|----------|--------|-----------|
+| `GET` | `/api/enderecos` | ADMIN | Listar todos os enderecos paginados |
+| `GET` | `/api/enderecos/usuario/{usuarioId}` | Proprio ou ADMIN | Listar enderecos de um usuario |
+| `GET` | `/api/enderecos/{id}` | Proprio ou ADMIN | Buscar endereco por ID |
 | `POST` | `/api/enderecos` | Autenticado | Criar endereco |
 | `PUT` | `/api/enderecos/{id}` | Proprio ou ADMIN | Atualizar endereco |
 | `DELETE` | `/api/enderecos/{id}` | Proprio ou ADMIN | Excluir endereco |
-| `PATCH` | `/api/enderecos/{id}/principal` | Proprio ou ADMIN | Definir endereco principal |
-| `GET` | `/api/cep/{cep}` | Autenticado | Consultar CEP |
+| `PATCH` | `/api/enderecos/{id}/principal` | Proprio ou ADMIN | Definir como endereco principal |
+
+### CEP
+
+| Metodo | Endpoint | Acesso | Descricao |
+|--------|----------|--------|-----------|
+| `GET` | `/api/cep/{cep}` | Autenticado | Consultar CEP via ViaCEP (cache Redis 24h) |
+
+### Nota sobre CSRF
+
+Todas as requisicoes de escrita (`POST`, `PUT`, `PATCH`, `DELETE`) requerem o header:
+
+```
+X-XSRF-TOKEN: <valor do cookie XSRF-TOKEN>
+```
+
+O cookie `XSRF-TOKEN` e definido automaticamente pelo backend a cada response e deve ser lido
+pelo JavaScript antes de cada requisicao de escrita. O Axios ja faz isso automaticamente
+via `xsrfCookieName` / `xsrfHeaderName`.
+
+---
 
 ## Testes
 
-Backend:
+### Backend (43 metodos)
 
 ```bash
 cd backend
-mvn test
-mvn verify
+mvn test          # testes unitarios
+mvn verify        # testes unitarios + integração (requer Docker para Testcontainers)
 ```
 
-Frontend:
+| Suite | Metodos | Tipo |
+|-------|---------|------|
+| AuthServiceTest | 4 | Unitario |
+| UsuarioServiceTest | 10 | Unitario |
+| ViaCepServiceImplTest | 6 | Unitario |
+| AuthControllerIntegrationTest | 7 | Integracao (Testcontainers) |
+| EnderecoControllerIntegrationTest | 5 | Integracao (Testcontainers) |
+| UsuarioControllerIntegrationTest | 11 | Integracao (Testcontainers) |
+
+### Frontend (43 testes)
 
 ```bash
 cd frontend
@@ -137,42 +171,126 @@ npm ci
 npm run lint
 npm test -- --run
 npm run build
+npm audit --omit=dev
 ```
 
-E2E:
+### E2E
 
 ```bash
 cd frontend
-npm run test:e2e
+CYPRESS_BASE_URL=http://localhost npx cypress run
 ```
 
-## Deploy em producao
+---
 
-```bash
-cp .env.example .env
-# preencha JWT_SECRET, DB_PASS e REDIS_PASSWORD
-./deploy.sh
+## Seguranca
+
+### Autenticacao e sessao
+
+- JWT armazenado em **cookies httpOnly** — nao exposto ao JavaScript
+- `ACCESS_TOKEN`: cookie httpOnly, path `/`, expira em 15 minutos (padrao)
+- `REFRESH_TOKEN`: cookie httpOnly, path `/api/auth`, expira em 7 dias
+- `XSRF-TOKEN`: cookie legivel pelo JS (httpOnly=false), renovado a cada response
+
+### Autorizacao — defesa em profundidade
+
+1. Filtro HTTP (`SecurityConfig.authorizeHttpRequests`) — bloqueia antes da resolucao de argumentos
+2. `@PreAuthorize("hasRole('ADMIN')")` nos metodos de controller
+3. Verificacao no servico (`requireAdmin()` / `isOwner()`)
+
+### Pipeline de seguranca (GitHub Actions)
+
+| Workflow | Gatilho | O que faz |
+|----------|---------|-----------|
+| `ci.yml` | push / PR | `mvn verify` + `npm ci/lint/test/build/audit` |
+| `security.yml` | push main / PR / semanal | Gitleaks + OWASP Dependency Check + Trivy (CRITICAL/HIGH) |
+| `codeql.yml` | push / PR / semanal | SAST CodeQL para Java e TypeScript |
+
+---
+
+## Estrutura do projeto
+
+```text
+app/
+|-- backend/
+|   `-- src/main/java/com/solutionti/usuarios/
+|       |-- config/         SecurityConfig, RedisConfig, OpenApiConfig
+|       |-- controller/     AuthController, UsuarioController, EnderecoController, CepController
+|       |-- dto/
+|       |   |-- request/    LoginRequest, UsuarioRequest, AtualizarUsuarioRequest,
+|       |   |               AlterarSenhaRequest, EnderecoRequest
+|       |   `-- response/   LoginResponse, UsuarioResponse, EnderecoResponse, CepResponse, ErrorResponse
+|       |-- entity/         Usuario, Endereco
+|       |-- exception/      GlobalExceptionHandler, BusinessException, NotFoundException, ForbiddenException
+|       |-- mapper/         UsuarioMapper, EnderecoMapper (MapStruct)
+|       |-- repository/     UsuarioRepository, EnderecoRepository
+|       |-- security/       JwtTokenProvider, JwtAuthenticationFilter, AuthCookieService,
+|       |                   CsrfCookieFilter, SpaCsrfTokenRequestHandler, RequestIdFilter
+|       |-- service/        Interfaces + Impl para Auth, Usuario, Endereco, Cep
+|       `-- validator/      CpfValidator, CepValidator
+|-- frontend/
+|   `-- src/
+|       |-- features/
+|       |   |-- auth/       LoginForm, ProtectedRoute, useAuth, authStore (Zustand)
+|       |   |-- usuarios/   UsuarioList, UsuarioCard, hooks, service
+|       |   `-- enderecos/  EnderecoForm, EnderecoList, CepInput, hooks, service
+|       |-- pages/          LoginPage, DashboardPage, UsuariosPage, UsuarioDetailPage,
+|       |                   EnderecosPage, AdminEnderecosPage
+|       `-- routes/         AppRoutes.tsx (lazy loading em todas as rotas)
+|-- .github/
+|   `-- workflows/          ci.yml, security.yml, codeql.yml
+|-- docs/
+|   |-- threat-model.md
+|   `-- runbook.md
+|-- docker-compose.yml
+|-- docker-compose.prod.yml
+|-- deploy.sh
+`-- .env.example
 ```
+
+---
 
 ## Variaveis de ambiente
 
 | Variavel | Obrigatoria | Padrao | Descricao |
 |----------|-------------|--------|-----------|
-| `JWT_SECRET` | Sim | - | Chave secreta JWT |
-| `JWT_EXPIRATION` | Nao | `86400000` | Expiracao do token em ms |
-| `DB_HOST` | Sim | - | Host do PostgreSQL |
-| `DB_PORT` | Nao | `5432` | Porta do PostgreSQL |
+| `JWT_SECRET` | Sim | — | Chave secreta JWT (base64) |
+| `JWT_EXPIRATION` | Nao | `900000` | Expiracao do access token em ms (15 min) |
+| `JWT_ACCESS_EXPIRATION` | Nao | `JWT_EXPIRATION` | Substitui `JWT_EXPIRATION` para o access token |
+| `JWT_REFRESH_EXPIRATION` | Nao | `604800000` | Expiracao do refresh token em ms (7 dias) |
+| `DB_HOST` | Sim | — | Host do PostgreSQL |
+| `DB_PORT` | Nao | `5432` | Porta interna do PostgreSQL |
 | `DB_NAME` | Nao | `usuarios_db` | Nome do banco |
 | `DB_USER` | Nao | `postgres` | Usuario do banco |
-| `DB_PASS` | Sim | - | Senha do banco |
-| `REDIS_HOST` | Nao | `localhost` | Host do Redis |
+| `DB_PASS` | Sim | — | Senha do banco |
+| `REDIS_HOST` | Nao | `redis` | Host do Redis |
 | `REDIS_PORT` | Nao | `6379` | Porta do Redis |
-| `REDIS_PASSWORD` | Sim em prod | - | Senha do Redis |
+| `REDIS_PASSWORD` | Sim em prod | — | Senha do Redis |
+| `CORS_ORIGINS` | Nao | `http://localhost:5173,http://localhost` | Origens permitidas pelo CORS |
 | `TRUST_PROXY_HEADERS` | Nao | `false` | Use `true` apenas atras de proxy confiavel |
-| `LOG_LEVEL` | Nao | `INFO` | Nivel de log da aplicacao |
-| `JPA_SHOW_SQL` | Nao | `false` | Log de SQL no backend |
+| `BACKEND_HOST_PORT` | Nao | `8080` | Porta do host para o backend |
+| `FRONTEND_HOST_PORT` | Nao | `80` | Porta do host para o frontend |
+| `LOG_LEVEL` | Nao | `INFO` | Nivel de log |
+| `JPA_SHOW_SQL` | Nao | `false` | Log de SQL |
 
-> Gere um `JWT_SECRET` seguro com `openssl rand -base64 64`.
+> Gere um `JWT_SECRET` seguro com: `openssl rand -base64 64`
+
+---
+
+## Deploy em producao
+
+```bash
+cp .env.example .env
+# defina JWT_SECRET, DB_PASS e REDIS_PASSWORD com valores seguros
+./deploy.sh
+```
+
+O script `deploy.sh` usa `docker-compose.prod.yml` que habilita:
+
+- cookies com `Secure` e `SameSite=Strict`
+- Redis com autenticacao obrigatoria
+- sem Swagger exposto
+- health checks com retries
 
 ---
 
