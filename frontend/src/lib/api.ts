@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { toast } from 'sonner'
+import { useAuthStore } from '@/features/auth/store/authStore'
 
 const api = axios.create({
   baseURL: '/api',
@@ -24,8 +25,7 @@ api.interceptors.response.use(
   (error) => {
     const status = error.response?.status
     if (status === 401) {
-      localStorage.removeItem('auth-storage')
-      window.location.href = '/login'
+      useAuthStore.getState().logout()
     } else if (status === 403) {
       toast.error('Acesso negado')
     } else if (status === 404) {

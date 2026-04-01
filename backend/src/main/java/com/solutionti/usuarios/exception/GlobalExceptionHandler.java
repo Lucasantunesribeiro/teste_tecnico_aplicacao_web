@@ -49,7 +49,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(UnauthorizedException.class)
     public ResponseEntity<ErrorResponse> handleUnauthorizedException(UnauthorizedException ex,
                                                                        HttpServletRequest request) {
-        log.warn("Acesso não autorizado: {}", ex.getMessage());
+        log.warn("Não autenticado: {}", ex.getMessage());
         ErrorResponse error = buildError(
             HttpStatus.UNAUTHORIZED,
             "Unauthorized",
@@ -58,6 +58,20 @@ public class GlobalExceptionHandler {
             null
         );
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+    }
+
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ErrorResponse> handleForbiddenException(ForbiddenException ex,
+                                                                    HttpServletRequest request) {
+        log.warn("Acesso proibido: {}", ex.getMessage());
+        ErrorResponse error = buildError(
+            HttpStatus.FORBIDDEN,
+            "Forbidden",
+            ex.getMessage(),
+            request.getRequestURI(),
+            null
+        );
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

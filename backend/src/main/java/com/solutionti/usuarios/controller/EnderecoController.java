@@ -4,7 +4,6 @@ import com.solutionti.usuarios.dto.request.AtualizarEnderecoRequest;
 import com.solutionti.usuarios.dto.request.EnderecoRequest;
 import com.solutionti.usuarios.dto.response.EnderecoResponse;
 import com.solutionti.usuarios.dto.response.ErrorResponse;
-import com.solutionti.usuarios.security.SecurityUtils;
 import com.solutionti.usuarios.service.EnderecoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -48,13 +47,14 @@ public class EnderecoController {
             content = @Content(schema = @Schema(implementation = EnderecoResponse.class))),
         @ApiResponse(responseCode = "400", description = "Dados inválidos ou CEP não encontrado",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(responseCode = "403", description = "Acesso negado",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
         @ApiResponse(responseCode = "404", description = "Usuário não encontrado",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     public ResponseEntity<EnderecoResponse> criar(@RequestBody @Valid EnderecoRequest request) {
         log.info("Requisição para criar endereço para usuário ID: {}", request.usuarioId());
-        UUID currentUserId = SecurityUtils.getCurrentUserId();
-        EnderecoResponse response = enderecoService.criar(request.usuarioId(), request, currentUserId);
+        EnderecoResponse response = enderecoService.criar(request.usuarioId(), request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -62,13 +62,14 @@ public class EnderecoController {
     @Operation(summary = "Listar endereços por usuário", description = "Lista todos os endereços de um usuário")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso"),
+        @ApiResponse(responseCode = "403", description = "Acesso negado",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
         @ApiResponse(responseCode = "404", description = "Usuário não encontrado",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     public ResponseEntity<List<EnderecoResponse>> listarPorUsuario(@PathVariable UUID usuarioId) {
         log.debug("Requisição para listar endereços do usuário ID: {}", usuarioId);
-        UUID currentUserId = SecurityUtils.getCurrentUserId();
-        List<EnderecoResponse> response = enderecoService.listarPorUsuario(usuarioId, currentUserId);
+        List<EnderecoResponse> response = enderecoService.listarPorUsuario(usuarioId);
         return ResponseEntity.ok(response);
     }
 
@@ -77,13 +78,14 @@ public class EnderecoController {
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Endereço encontrado",
             content = @Content(schema = @Schema(implementation = EnderecoResponse.class))),
+        @ApiResponse(responseCode = "403", description = "Acesso negado",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
         @ApiResponse(responseCode = "404", description = "Endereço não encontrado",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     public ResponseEntity<EnderecoResponse> buscarPorId(@PathVariable UUID id) {
         log.debug("Requisição para buscar endereço ID: {}", id);
-        UUID currentUserId = SecurityUtils.getCurrentUserId();
-        EnderecoResponse response = enderecoService.buscarPorId(id, currentUserId);
+        EnderecoResponse response = enderecoService.buscarPorId(id);
         return ResponseEntity.ok(response);
     }
 
@@ -94,14 +96,15 @@ public class EnderecoController {
             content = @Content(schema = @Schema(implementation = EnderecoResponse.class))),
         @ApiResponse(responseCode = "400", description = "Dados inválidos",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(responseCode = "403", description = "Acesso negado",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
         @ApiResponse(responseCode = "404", description = "Endereço não encontrado",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     public ResponseEntity<EnderecoResponse> atualizar(@PathVariable UUID id,
                                                        @RequestBody @Valid AtualizarEnderecoRequest request) {
         log.info("Requisição para atualizar endereço ID: {}", id);
-        UUID currentUserId = SecurityUtils.getCurrentUserId();
-        EnderecoResponse response = enderecoService.atualizar(id, request, currentUserId);
+        EnderecoResponse response = enderecoService.atualizar(id, request);
         return ResponseEntity.ok(response);
     }
 
@@ -109,15 +112,14 @@ public class EnderecoController {
     @Operation(summary = "Deletar endereço", description = "Remove um endereço do sistema")
     @ApiResponses({
         @ApiResponse(responseCode = "204", description = "Endereço deletado com sucesso"),
-        @ApiResponse(responseCode = "401", description = "Não autorizado",
+        @ApiResponse(responseCode = "403", description = "Acesso negado",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
         @ApiResponse(responseCode = "404", description = "Endereço não encontrado",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     public ResponseEntity<Void> deletar(@PathVariable UUID id) {
         log.info("Requisição para deletar endereço ID: {}", id);
-        UUID currentUserId = SecurityUtils.getCurrentUserId();
-        enderecoService.deletar(id, currentUserId);
+        enderecoService.deletar(id);
         return ResponseEntity.noContent().build();
     }
 
@@ -126,15 +128,14 @@ public class EnderecoController {
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Endereço definido como principal",
             content = @Content(schema = @Schema(implementation = EnderecoResponse.class))),
-        @ApiResponse(responseCode = "401", description = "Não autorizado",
+        @ApiResponse(responseCode = "403", description = "Acesso negado",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
         @ApiResponse(responseCode = "404", description = "Endereço não encontrado",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     public ResponseEntity<EnderecoResponse> definirComoPrincipal(@PathVariable UUID id) {
         log.info("Requisição para definir endereço ID: {} como principal", id);
-        UUID currentUserId = SecurityUtils.getCurrentUserId();
-        EnderecoResponse response = enderecoService.definirComoPrincipal(id, currentUserId);
+        EnderecoResponse response = enderecoService.definirComoPrincipal(id);
         return ResponseEntity.ok(response);
     }
 }

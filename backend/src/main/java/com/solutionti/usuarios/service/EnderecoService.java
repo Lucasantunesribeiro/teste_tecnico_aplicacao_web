@@ -9,15 +9,15 @@ import java.util.UUID;
 
 public interface EnderecoService {
 
-    EnderecoResponse criar(UUID usuarioId, EnderecoRequest request, UUID currentUserId);
+    EnderecoResponse criar(UUID usuarioId, EnderecoRequest request);
 
-    List<EnderecoResponse> listarPorUsuario(UUID usuarioId, UUID currentUserId);
+    List<EnderecoResponse> listarPorUsuario(UUID usuarioId);
 
-    EnderecoResponse buscarPorId(UUID id, UUID currentUserId);
+    EnderecoResponse buscarPorId(UUID id);
 
-    EnderecoResponse atualizar(UUID id, AtualizarEnderecoRequest request, UUID currentUserId);
+    EnderecoResponse atualizar(UUID id, AtualizarEnderecoRequest request);
 
-    void deletar(UUID id, UUID currentUserId);
+    void deletar(UUID id);
 
-    EnderecoResponse definirComoPrincipal(UUID id, UUID currentUserId);
+    EnderecoResponse definirComoPrincipal(UUID id);
 }

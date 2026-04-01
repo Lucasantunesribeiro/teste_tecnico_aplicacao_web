@@ -11,11 +11,11 @@ public interface UsuarioService {
 
     UsuarioResponse criar(UsuarioRequest request);
 
-    UsuarioResponse buscarPorId(UUID id, UUID currentUserId);
+    UsuarioResponse buscarPorId(UUID id);
 
     Page<UsuarioResponse> listarTodos(Pageable pageable);
 
-    UsuarioResponse atualizar(UUID id, UsuarioRequest request, UUID currentUserId);
+    UsuarioResponse atualizar(UUID id, UsuarioRequest request);
 
     void deletar(UUID id);
 }

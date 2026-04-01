@@ -6,8 +6,8 @@ import com.solutionti.usuarios.dto.response.CepResponse;
 import com.solutionti.usuarios.dto.response.EnderecoResponse;
 import com.solutionti.usuarios.entity.Endereco;
 import com.solutionti.usuarios.entity.Usuario;
+import com.solutionti.usuarios.exception.ForbiddenException;
 import com.solutionti.usuarios.exception.NotFoundException;
-import com.solutionti.usuarios.exception.UnauthorizedException;
 import com.solutionti.usuarios.mapper.EnderecoMapper;
 import com.solutionti.usuarios.repository.EnderecoRepository;
 import com.solutionti.usuarios.repository.UsuarioRepository;
@@ -34,13 +34,13 @@ public class EnderecoServiceImpl implements EnderecoService {
 
     @Override
     @Transactional
-    public EnderecoResponse criar(UUID usuarioId, EnderecoRequest request, UUID currentUserId) {
+    public EnderecoResponse criar(UUID usuarioId, EnderecoRequest request) {
         log.info("Criando endereço para usuário ID: {}", usuarioId);
 
         verificarPermissaoUsuario(usuarioId);
 
         Usuario usuario = usuarioRepository.findById(usuarioId)
-            .orElseThrow(() -> new NotFoundException("Usuário não encontrado com ID: " + usuarioId));
+            .orElseThrow(() -> new NotFoundException("Usuário não encontrado"));
 
         CepResponse cepData = cepService.consultarCep(request.cep());
 
@@ -65,13 +65,13 @@ public class EnderecoServiceImpl implements EnderecoService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<EnderecoResponse> listarPorUsuario(UUID usuarioId, UUID currentUserId) {
+    public List<EnderecoResponse> listarPorUsuario(UUID usuarioId) {
         log.debug("Listando endereços do usuário ID: {}", usuarioId);
 
         verificarPermissaoUsuario(usuarioId);
 
         if (!usuarioRepository.existsById(usuarioId)) {
-            throw new NotFoundException("Usuário não encontrado com ID: " + usuarioId);
+            throw new NotFoundException("Usuário não encontrado");
         }
 
         List<Endereco> enderecos = enderecoRepository.findByUsuarioIdOrderByPrincipalDesc(usuarioId);
@@ -80,7 +80,7 @@ public class EnderecoServiceImpl implements EnderecoService {
 
     @Override
     @Transactional(readOnly = true)
-    public EnderecoResponse buscarPorId(UUID id, UUID currentUserId) {
+    public EnderecoResponse buscarPorId(UUID id) {
         log.debug("Buscando endereço ID: {}", id);
 
         Endereco endereco = findEnderecoOrThrow(id);
@@ -91,7 +91,7 @@ public class EnderecoServiceImpl implements EnderecoService {
 
     @Override
     @Transactional
-    public EnderecoResponse atualizar(UUID id, AtualizarEnderecoRequest request, UUID currentUserId) {
+    public EnderecoResponse atualizar(UUID id, AtualizarEnderecoRequest request) {
         log.info("Atualizando endereço ID: {}", id);
 
         Endereco endereco = findEnderecoOrThrow(id);
@@ -122,7 +122,7 @@ public class EnderecoServiceImpl implements EnderecoService {
 
     @Override
     @Transactional
-    public void deletar(UUID id, UUID currentUserId) {
+    public void deletar(UUID id) {
         log.info("Deletando endereço ID: {}", id);
 
         Endereco endereco = findEnderecoOrThrow(id);
@@ -146,7 +146,7 @@ public class EnderecoServiceImpl implements EnderecoService {
 
     @Override
     @Transactional
-    public EnderecoResponse definirComoPrincipal(UUID id, UUID currentUserId) {
+    public EnderecoResponse definirComoPrincipal(UUID id) {
         log.info("Definindo endereço ID: {} como principal", id);
 
         Endereco endereco = findEnderecoOrThrow(id);
@@ -163,12 +163,12 @@ public class EnderecoServiceImpl implements EnderecoService {
 
     private Endereco findEnderecoOrThrow(UUID id) {
         return enderecoRepository.findById(id)
-            .orElseThrow(() -> new NotFoundException("Endereço não encontrado com ID: " + id));
+            .orElseThrow(() -> new NotFoundException("Endereço não encontrado"));
     }
 
     private void verificarPermissaoUsuario(UUID usuarioId) {
         if (!SecurityUtils.isAdmin() && !SecurityUtils.isOwner(usuarioId)) {
-            throw new UnauthorizedException("Acesso negado: você não tem permissão para acessar dados deste usuário");
+            throw new ForbiddenException("Acesso negado: você não tem permissão para acessar dados deste usuário");
         }
     }
 }

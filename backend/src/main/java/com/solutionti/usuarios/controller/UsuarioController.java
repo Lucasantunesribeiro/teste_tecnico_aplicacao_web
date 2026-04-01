@@ -3,7 +3,6 @@ package com.solutionti.usuarios.controller;
 import com.solutionti.usuarios.dto.request.UsuarioRequest;
 import com.solutionti.usuarios.dto.response.ErrorResponse;
 import com.solutionti.usuarios.dto.response.UsuarioResponse;
-import com.solutionti.usuarios.security.SecurityUtils;
 import com.solutionti.usuarios.service.UsuarioService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -61,7 +60,7 @@ public class UsuarioController {
     @Operation(summary = "Listar usuários", description = "Lista todos os usuários com paginação (apenas ADMIN)")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso"),
-        @ApiResponse(responseCode = "401", description = "Não autorizado",
+        @ApiResponse(responseCode = "403", description = "Acesso negado",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     public ResponseEntity<Page<UsuarioResponse>> listar(
@@ -76,13 +75,14 @@ public class UsuarioController {
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Usuário encontrado",
             content = @Content(schema = @Schema(implementation = UsuarioResponse.class))),
+        @ApiResponse(responseCode = "403", description = "Acesso negado",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
         @ApiResponse(responseCode = "404", description = "Usuário não encontrado",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     public ResponseEntity<UsuarioResponse> buscarPorId(@PathVariable UUID id) {
         log.debug("Requisição para buscar usuário ID: {}", id);
-        UUID currentUserId = SecurityUtils.getCurrentUserId();
-        UsuarioResponse response = usuarioService.buscarPorId(id, currentUserId);
+        UsuarioResponse response = usuarioService.buscarPorId(id);
         return ResponseEntity.ok(response);
     }
 
@@ -93,14 +93,15 @@ public class UsuarioController {
             content = @Content(schema = @Schema(implementation = UsuarioResponse.class))),
         @ApiResponse(responseCode = "400", description = "Dados inválidos",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(responseCode = "403", description = "Acesso negado",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
         @ApiResponse(responseCode = "404", description = "Usuário não encontrado",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     public ResponseEntity<UsuarioResponse> atualizar(@PathVariable UUID id,
                                                       @RequestBody @Valid UsuarioRequest request) {
         log.info("Requisição para atualizar usuário ID: {}", id);
-        UUID currentUserId = SecurityUtils.getCurrentUserId();
-        UsuarioResponse response = usuarioService.atualizar(id, request, currentUserId);
+        UsuarioResponse response = usuarioService.atualizar(id, request);
         return ResponseEntity.ok(response);
     }
 
@@ -108,7 +109,7 @@ public class UsuarioController {
     @Operation(summary = "Deletar usuário", description = "Remove um usuário do sistema (apenas ADMIN)")
     @ApiResponses({
         @ApiResponse(responseCode = "204", description = "Usuário deletado com sucesso"),
-        @ApiResponse(responseCode = "401", description = "Não autorizado",
+        @ApiResponse(responseCode = "403", description = "Acesso negado",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
         @ApiResponse(responseCode = "404", description = "Usuário não encontrado",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))

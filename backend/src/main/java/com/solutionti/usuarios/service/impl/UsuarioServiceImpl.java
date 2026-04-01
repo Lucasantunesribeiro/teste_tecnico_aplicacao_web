@@ -4,8 +4,8 @@ import com.solutionti.usuarios.dto.request.UsuarioRequest;
 import com.solutionti.usuarios.dto.response.UsuarioResponse;
 import com.solutionti.usuarios.entity.Usuario;
 import com.solutionti.usuarios.exception.BusinessException;
+import com.solutionti.usuarios.exception.ForbiddenException;
 import com.solutionti.usuarios.exception.NotFoundException;
-import com.solutionti.usuarios.exception.UnauthorizedException;
 import com.solutionti.usuarios.mapper.UsuarioMapper;
 import com.solutionti.usuarios.repository.UsuarioRepository;
 import com.solutionti.usuarios.security.SecurityUtils;
@@ -55,11 +55,11 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     @Override
     @Transactional(readOnly = true)
-    public UsuarioResponse buscarPorId(UUID id, UUID currentUserId) {
+    public UsuarioResponse buscarPorId(UUID id) {
         log.debug("Buscando usuário ID: {}", id);
 
         if (!SecurityUtils.isAdmin() && !SecurityUtils.isOwner(id)) {
-            throw new UnauthorizedException("Acesso negado: você não tem permissão para visualizar este usuário");
+            throw new ForbiddenException("Acesso negado: você não tem permissão para visualizar este usuário");
         }
 
         Usuario usuario = findUsuarioOrThrow(id);
@@ -72,7 +72,7 @@ public class UsuarioServiceImpl implements UsuarioService {
         log.debug("Listando todos os usuários, página: {}", pageable.getPageNumber());
 
         if (!SecurityUtils.isAdmin()) {
-            throw new UnauthorizedException("Acesso negado: apenas administradores podem listar todos os usuários");
+            throw new ForbiddenException("Acesso negado: apenas administradores podem listar todos os usuários");
         }
 
         return usuarioRepository.findAll(pageable)
@@ -81,11 +81,11 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     @Override
     @Transactional
-    public UsuarioResponse atualizar(UUID id, UsuarioRequest request, UUID currentUserId) {
+    public UsuarioResponse atualizar(UUID id, UsuarioRequest request) {
         log.info("Atualizando usuário ID: {}", id);
 
         if (!SecurityUtils.isAdmin() && !SecurityUtils.isOwner(id)) {
-            throw new UnauthorizedException("Acesso negado: você não tem permissão para atualizar este usuário");
+            throw new ForbiddenException("Acesso negado: você não tem permissão para atualizar este usuário");
         }
 
         Usuario usuario = findUsuarioOrThrow(id);
@@ -114,7 +114,7 @@ public class UsuarioServiceImpl implements UsuarioService {
         log.info("Deletando usuário ID: {}", id);
 
         if (!SecurityUtils.isAdmin()) {
-            throw new UnauthorizedException("Acesso negado: apenas administradores podem deletar usuários");
+            throw new ForbiddenException("Acesso negado: apenas administradores podem deletar usuários");
         }
 
         Usuario usuario = findUsuarioOrThrow(id);
@@ -124,6 +124,6 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     private Usuario findUsuarioOrThrow(UUID id) {
         return usuarioRepository.findById(id)
-            .orElseThrow(() -> new NotFoundException("Usuário não encontrado com ID: " + id));
+            .orElseThrow(() -> new NotFoundException("Usuário não encontrado"));
     }
 }
