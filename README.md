@@ -22,6 +22,23 @@ Sistema fullstack para cadastro de usuarios e gerenciamento de enderecos, com au
 
 ---
 
+## Diferenciais Atendidos
+
+Os diferenciais pedidos no enunciado foram tratados de forma explicita no projeto:
+
+| Diferencial pedido | Como foi atendido neste projeto |
+|--------------------|---------------------------------|
+| React Query | O frontend usa **TanStack Query v5** para busca, cache, invalidação e mutações de dados de autenticação, usuários e endereços, reduzindo lógica manual de loading/error state e re-fetch desnecessário. |
+| shadcn/ui | A interface usa **shadcn/ui** sobre Tailwind + Radix UI para construir formulários, cards, dialogs e componentes reutilizáveis com visual consistente e base acessível. |
+| Docker | O projeto sobe com **Docker Compose**, incluindo aplicação, PostgreSQL e Redis, além de Dockerfiles dedicados para backend e frontend e compose de produção/local. |
+| Backend em camadas | O backend está organizado em **controller, service, repository, dto, mapper, validator, security e config**, separando transporte HTTP, regra de negócio, persistência e contratos públicos. |
+| Tratamento de erros da API | A API centraliza erros com **GlobalExceptionHandler** e responde em formato padronizado via `ErrorResponse`, cobrindo validação, autenticação, autorização e regras de negócio. |
+| Testes automatizados | O projeto possui **testes unitários, de integração e E2E**: backend com JUnit/Testcontainers, frontend com Vitest e fluxo E2E com Cypress. |
+
+Esses diferenciais não foram adicionados só como checklist: eles estão integrados ao fluxo real da aplicação, ao setup local com Docker e à esteira de validação do repositório.
+
+---
+
 ## Funcionalidades
 
 - Autenticacao JWT em **cookies httpOnly** — token nao acessivel ao JavaScript do browser
