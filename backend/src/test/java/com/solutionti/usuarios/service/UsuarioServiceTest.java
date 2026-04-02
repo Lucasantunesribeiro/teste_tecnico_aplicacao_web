@@ -232,8 +232,9 @@ class UsuarioServiceTest {
         // When
         usuarioService.alterarSenha(userId, senhaRequest);
 
-        // Then
-        verify(passwordEncoder).matches("SenhaAtual1", savedUsuario.getSenha());
+        // Then — use the original encoded password, not savedUsuario.getSenha() which
+        // is mutated by the service call (setSenha is called with the new encoded value)
+        verify(passwordEncoder).matches("SenhaAtual1", "$2a$10$encodedPassword");
         verify(passwordEncoder).encode("NovaSenha1");
     }
 

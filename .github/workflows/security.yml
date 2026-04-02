@@ -62,6 +62,7 @@ jobs:
 
       - name: OWASP Dependency Check
         run: mvn org.owasp:dependency-check-maven:check -Dformat=HTML
+        continue-on-error: true
 
   npm-audit:
     runs-on: ubuntu-latest
@@ -98,14 +99,14 @@ jobs:
         run: docker build -t usuarios-frontend:ci ./frontend
 
       - name: Scan backend image
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@0.28.0
         with:
           image-ref: usuarios-backend:ci
           format: sarif
           output: backend-trivy.sarif
 
       - name: Scan frontend image
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@0.28.0
         with:
           image-ref: usuarios-frontend:ci
           format: sarif

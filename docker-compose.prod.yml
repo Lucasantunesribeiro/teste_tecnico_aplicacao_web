@@ -67,6 +67,7 @@ services:
       JWT_ACCESS_EXPIRATION: ${JWT_ACCESS_EXPIRATION:-900000}
       JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION:-604800000}
       CORS_ORIGINS: ${CORS_ORIGINS}
+      SPRING_PROFILES_ACTIVE: prod
       LOG_LEVEL: WARN
       JPA_SHOW_SQL: "false"
     # No ports exposed — accessed via nginx

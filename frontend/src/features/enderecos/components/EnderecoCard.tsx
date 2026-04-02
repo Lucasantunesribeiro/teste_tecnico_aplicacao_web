@@ -53,14 +53,14 @@ export function EnderecoCard({ endereco, showOwner = false }: Props) {
                 variant="ghost"
                 size="icon"
                 className="h-7 w-7"
-                aria-label="Editar endereco"
+                aria-label="Editar endereço"
               >
                 <Pencil className="h-3 w-3" />
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Editar endereco</DialogTitle>
+                <DialogTitle>Editar endereço</DialogTitle>
               </DialogHeader>
               <EnderecoForm
                 usuarioId={endereco.usuarioId}

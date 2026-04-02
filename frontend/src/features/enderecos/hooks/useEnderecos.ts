@@ -33,7 +33,7 @@ export function useCreateEndereco() {
   return useMutation({
     mutationFn: (data: EnderecoRequest) => enderecoService.criar(data),
     onSuccess: () => {
-      toast.success('Endereco adicionado!')
+      toast.success('Endereço adicionado!')
       queryClient.invalidateQueries({ queryKey: ['enderecos'] })
       queryClient.invalidateQueries({ queryKey: ['enderecos-admin'] })
       queryClient.invalidateQueries({ queryKey: ['usuarios'] })
@@ -47,7 +47,7 @@ export function useUpdateEndereco() {
     mutationFn: ({ id, data }: { id: string; data: AtualizarEnderecoRequest }) =>
       enderecoService.atualizar(id, data),
     onSuccess: () => {
-      toast.success('Endereco atualizado!')
+      toast.success('Endereço atualizado!')
       queryClient.invalidateQueries({ queryKey: ['enderecos'] })
       queryClient.invalidateQueries({ queryKey: ['enderecos-admin'] })
     },

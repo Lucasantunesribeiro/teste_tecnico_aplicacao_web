@@ -1,11 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder>
-            <pattern>ts=%date{ISO8601} level=%-5level logger=%logger{36} requestId=%X{requestId:-none} msg="%msg"%n</pattern>
-        </encoder>
-    </appender>
 
-    <root level="INFO">
-        <appender-ref ref="CONSOLE" />
-    </root>
+    <!-- Default profile (dev / test): human-readable key=value -->
+    <springProfile name="!prod">
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>ts=%date{ISO8601} level=%-5level logger=%logger{36} requestId=%X{requestId:-none} msg="%msg"%n</pattern>
+            </encoder>
+        </appender>
+        <root level="INFO">
+            <appender-ref ref="CONSOLE" />
+        </root>
+    </springProfile>
+
+    <!-- Production profile: structured JSON for log aggregators (ELK, Loki, CloudWatch) -->
+    <springProfile name="prod">
+        <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+                <!-- Include requestId (correlation ID) from MDC -->
+                <includeMdcKeyName>requestId</includeMdcKeyName>
+                <fieldNames>
+                    <timestamp>ts</timestamp>
+                    <message>msg</message>
+                    <logger>logger</logger>
+                    <thread>thread</thread>
+                    <!-- levelValue is the numeric priority — omit to keep output lean -->
+                    <levelValue>[ignore]</levelValue>
+                </fieldNames>
+            </encoder>
+        </appender>
+        <root level="WARN">
+            <appender-ref ref="JSON_CONSOLE" />
+        </root>
+    </springProfile>
+
 </configuration>
