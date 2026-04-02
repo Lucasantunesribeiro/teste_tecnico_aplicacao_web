@@ -53,3 +53,9 @@ Thumbs.db
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# ===========================
+# Cypress test artifacts
+# ===========================
+frontend/cypress/screenshots/
+frontend/cypress/videos/
