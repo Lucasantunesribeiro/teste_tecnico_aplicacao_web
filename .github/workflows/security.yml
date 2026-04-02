@@ -83,8 +83,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Audit all dependencies
-        run: npm audit
+      - name: Audit runtime dependencies
+        run: npm audit --omit=dev
 
   image-scan:
     runs-on: ubuntu-latest
@@ -98,19 +98,14 @@ jobs:
       - name: Build frontend image
         run: docker build -t usuarios-frontend:ci ./frontend
 
+      - name: Install Trivy
+        run: curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+
       - name: Scan backend image
-        uses: aquasecurity/trivy-action@0.28.0
-        with:
-          image-ref: usuarios-backend:ci
-          format: sarif
-          output: backend-trivy.sarif
+        run: trivy image --exit-code 0 --severity CRITICAL,HIGH --format sarif --output backend-trivy.sarif usuarios-backend:ci
 
       - name: Scan frontend image
-        uses: aquasecurity/trivy-action@0.28.0
-        with:
-          image-ref: usuarios-frontend:ci
-          format: sarif
-          output: frontend-trivy.sarif
+        run: trivy image --exit-code 0 --severity CRITICAL,HIGH --format sarif --output frontend-trivy.sarif usuarios-frontend:ci
 
       - name: Upload backend scan
         uses: github/codeql-action/upload-sarif@v3

@@ -76,20 +76,11 @@ jobs:
       - name: Build frontend image
         run: docker build -t usuarios-frontend-ci ./frontend
 
+      - name: Install Trivy
+        run: curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+
       - name: Trivy backend image scan
-        uses: aquasecurity/trivy-action@0.28.0
-        with:
-          image-ref: usuarios-backend-ci
-          format: table
-          exit-code: '1'
-          ignore-unfixed: true
-          severity: CRITICAL,HIGH
+        run: trivy image --exit-code 1 --ignore-unfixed --severity CRITICAL,HIGH --format table usuarios-backend-ci
 
       - name: Trivy frontend image scan
-        uses: aquasecurity/trivy-action@0.28.0
-        with:
-          image-ref: usuarios-frontend-ci
-          format: table
-          exit-code: '1'
-          ignore-unfixed: true
-          severity: CRITICAL,HIGH
+        run: trivy image --exit-code 1 --ignore-unfixed --severity CRITICAL,HIGH --format table usuarios-frontend-ci
