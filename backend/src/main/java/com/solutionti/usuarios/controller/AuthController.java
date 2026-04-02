@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -76,6 +77,7 @@ public class AuthController {
 
     @PostMapping("/refresh")
     @Operation(summary = "Renovar sessao", description = "Rotaciona o refresh token e emite um novo access token")
+    @SecurityRequirement(name = "cookieAuth")
     public ResponseEntity<LoginResponse> refresh(
             @CookieValue(name = AuthCookieService.REFRESH_COOKIE_NAME, required = false) String refreshToken,
             HttpServletResponse response,
@@ -91,6 +93,7 @@ public class AuthController {
 
     @PostMapping("/logout")
     @Operation(summary = "Encerrar sessao", description = "Revoga a sessao atual e limpa os cookies")
+    @SecurityRequirement(name = "cookieAuth")
     public ResponseEntity<Void> logout(
             @CookieValue(name = AuthCookieService.REFRESH_COOKIE_NAME, required = false) String refreshToken,
             HttpServletResponse response) {
@@ -103,6 +106,7 @@ public class AuthController {
 
     @GetMapping("/me")
     @Operation(summary = "Sessao atual", description = "Retorna os dados do usuario autenticado")
+    @SecurityRequirement(name = "cookieAuth")
     public ResponseEntity<LoginResponse> me(CsrfToken csrfToken) {
         csrfToken.getToken();
         return ResponseEntity.ok()

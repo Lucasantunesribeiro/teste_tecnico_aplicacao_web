@@ -41,7 +41,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Usuarios", description = "Gerenciamento de usuários")
-@SecurityRequirement(name = "bearerAuth")
+@SecurityRequirement(name = "cookieAuth")
 public class UsuarioController {
 
     private final UsuarioService usuarioService;

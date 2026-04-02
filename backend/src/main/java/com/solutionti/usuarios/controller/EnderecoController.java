@@ -41,7 +41,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Enderecos", description = "Gerenciamento de endereços de usuários")
-@SecurityRequirement(name = "bearerAuth")
+@SecurityRequirement(name = "cookieAuth")
 public class EnderecoController {
 
     private final EnderecoService enderecoService;

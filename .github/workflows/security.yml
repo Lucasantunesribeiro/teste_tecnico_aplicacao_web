@@ -8,12 +8,56 @@ on:
     - cron: "0 5 * * 1"
   workflow_dispatch:
 
+concurrency:
+  group: security-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   actions: read
   contents: read
   security-events: write
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.detect.outputs.backend }}
+      frontend: ${{ steps.detect.outputs.frontend }}
+      images: ${{ steps.detect.outputs.images }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed areas
+        id: detect
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git diff --name-only "${{ github.event.pull_request.base.sha }}...${{ github.sha }}" > changed_files.txt
+          else
+            git ls-files > changed_files.txt
+          fi
+
+          if grep -Eq '^(backend/|docker-compose(\.prod)?\.yml|\.github/workflows/security\.yml)' changed_files.txt; then
+            echo "backend=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "backend=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          if grep -Eq '^(frontend/|docker-compose(\.prod)?\.yml|\.github/workflows/security\.yml)' changed_files.txt; then
+            echo "frontend=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "frontend=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          if grep -Eq '^(backend/|frontend/|docker-compose(\.prod)?\.yml|\.github/workflows/security\.yml)' changed_files.txt; then
+            echo "images=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "images=false" >> "$GITHUB_OUTPUT"
+          fi
+
   secrets:
     runs-on: ubuntu-latest
     steps:
@@ -29,9 +73,24 @@ jobs:
           sudo install gitleaks /usr/local/bin/gitleaks
 
       - name: Run Gitleaks
-        run: gitleaks dir . --redact --no-banner --exit-code 1
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            RANGE="${{ github.event.pull_request.base.sha }}..${{ github.sha }}"
+            echo "Scanning commit range: $RANGE"
+            gitleaks git --redact --no-banner --exit-code 1 --log-opts="$RANGE"
+          elif [ "${{ github.event_name }}" = "push" ] && [ "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ]; then
+            RANGE="${{ github.event.before }}..${{ github.sha }}"
+            echo "Scanning commit range: $RANGE"
+            gitleaks git --redact --no-banner --exit-code 1 --log-opts="$RANGE"
+          else
+            echo "Scanning full repository history"
+            gitleaks git --redact --no-banner --exit-code 1
+          fi
 
   dependency-check:
+    needs: changes
+    if: github.event_name != 'pull_request' || needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -71,6 +130,8 @@ jobs:
           -DnvdApiKeyEnvironmentVariable=NVD_API_KEY
 
   npm-audit:
+    needs: changes
+    if: github.event_name != 'pull_request' || needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -93,6 +154,8 @@ jobs:
         run: npm audit --omit=dev
 
   image-scan:
+    needs: changes
+    if: github.event_name != 'pull_request' || needs.changes.outputs.images == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

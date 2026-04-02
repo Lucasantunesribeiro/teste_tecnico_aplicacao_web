@@ -12,7 +12,7 @@ Sistema fullstack para cadastro de usuarios e gerenciamento de enderecos, com au
 
 | Camada | Tecnologias |
 |--------|-------------|
-| Backend | Java 17, Spring Boot 3.2, Spring Security 6, JWT, MapStruct |
+| Backend | Java 17, Spring Boot 3.5.13, Spring Security 6, JWT, MapStruct |
 | Banco de dados | PostgreSQL 16, Redis 7 |
 | Frontend | React 18, TypeScript, Vite, TanStack Query v5, Zustand, React Hook Form + Zod |
 | UI | shadcn/ui, Tailwind CSS, Radix UI, Lucide React |
@@ -202,9 +202,9 @@ CYPRESS_BASE_URL=http://localhost npx cypress run
 
 | Workflow | Gatilho | O que faz |
 |----------|---------|-----------|
-| `ci.yml` | push / PR | `mvn verify` + `npm ci/lint/test/build/audit` |
-| `security.yml` | push main / PR / semanal | Gitleaks + OWASP Dependency Check + Trivy (CRITICAL/HIGH) |
-| `codeql.yml` | push / PR / semanal | SAST CodeQL para Java e TypeScript |
+| `ci.yml` | push / PR | `mvn verify` + `npm ci/lint/test/build` |
+| `security.yml` | push main / PR / semanal / manual | Gitleaks por faixa de commits + OWASP Dependency Check + `npm audit` + Trivy (com jobs pesados só quando a área relevante muda no PR) |
+| `codeql.yml` | push main / PR / semanal / manual | SAST CodeQL para Java e TypeScript |
 
 ---
 
