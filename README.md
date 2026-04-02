@@ -97,8 +97,8 @@ Frontend disponivel em `http://localhost:5173` (proxy `/api/*` → `:8080`).
 | Metodo | Endpoint | Acesso | Descricao |
 |--------|----------|--------|-----------|
 | `POST` | `/api/auth/login` | Publico | Login com CPF e senha; define cookies ACCESS\_TOKEN e REFRESH\_TOKEN |
-| `POST` | `/api/auth/refresh` | Cookie refresh | Emite novo access token |
-| `POST` | `/api/auth/logout` | Autenticado | Invalida sessao e limpa cookies |
+| `POST` | `/api/auth/refresh` | Cookie `REFRESH_TOKEN` + CSRF | Emite novo access token |
+| `POST` | `/api/auth/logout` | CSRF + cookie opcional de refresh | Revoga o refresh token quando presente e limpa cookies |
 | `GET` | `/api/auth/me` | Autenticado | Retorna userId, cpf e role do token atual |
 
 ### Usuarios (`/api/usuarios`)
@@ -146,7 +146,7 @@ via `xsrfCookieName` / `xsrfHeaderName`.
 
 ## Testes
 
-### Backend (43 metodos)
+### Backend
 
 ```bash
 cd backend
@@ -154,16 +154,20 @@ mvn test          # testes unitarios
 mvn verify        # testes unitarios + integração (requer Docker para Testcontainers)
 ```
 
-| Suite | Metodos | Tipo |
-|-------|---------|------|
-| AuthServiceTest | 4 | Unitario |
-| UsuarioServiceTest | 10 | Unitario |
-| ViaCepServiceImplTest | 6 | Unitario |
-| AuthControllerIntegrationTest | 7 | Integracao (Testcontainers) |
-| EnderecoControllerIntegrationTest | 5 | Integracao (Testcontainers) |
-| UsuarioControllerIntegrationTest | 11 | Integracao (Testcontainers) |
+Ultima validacao local desta documentacao: `68` testes passando com `mvn -B test`.
 
-### Frontend (43 testes)
+| Suite | Tipo |
+|-------|------|
+| AuthServiceTest | Unitario |
+| UsuarioServiceTest | Unitario |
+| ViaCepServiceImplTest | Unitario |
+| CepValidatorTest | Validacao |
+| CpfValidatorTest | Validacao |
+| AuthControllerIntegrationTest | Integracao (Testcontainers) |
+| EnderecoControllerIntegrationTest | Integracao (Testcontainers) |
+| UsuarioControllerIntegrationTest | Integracao (Testcontainers) |
+
+### Frontend
 
 ```bash
 cd frontend
@@ -173,6 +177,8 @@ npm test -- --run
 npm run build
 npm audit --omit=dev
 ```
+
+Ultima validacao local desta documentacao: `43` testes passando com `npm test -- --run`.
 
 ### E2E
 
@@ -203,8 +209,10 @@ CYPRESS_BASE_URL=http://localhost npx cypress run
 | Workflow | Gatilho | O que faz |
 |----------|---------|-----------|
 | `ci.yml` | push / PR | `mvn verify` + `npm ci/lint/test/build` |
-| `security.yml` | push main / PR / semanal / manual | Gitleaks por faixa de commits + OWASP Dependency Check + `npm audit` + Trivy (com jobs pesados só quando a área relevante muda no PR) |
+| `security.yml` | push main / PR / semanal / manual | PR: Gitleaks + `npm audit` quando houver mudanca de frontend. Mainline/manual: Gitleaks + OWASP Dependency Check + `npm audit` + Trivy |
 | `codeql.yml` | push main / PR / semanal / manual | SAST CodeQL para Java e TypeScript |
+
+Objetivo operacional: manter feedback rapido em PR e deixar os scans mais caros para `main`, execucoes manuais e rotina agendada.
 
 ---
 

@@ -21,9 +21,7 @@ jobs:
   changes:
     runs-on: ubuntu-latest
     outputs:
-      backend: ${{ steps.detect.outputs.backend }}
       frontend: ${{ steps.detect.outputs.frontend }}
-      images: ${{ steps.detect.outputs.images }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.2
@@ -40,22 +38,10 @@ jobs:
             git ls-files > changed_files.txt
           fi
 
-          if grep -Eq '^(backend/|docker-compose(\.prod)?\.yml|\.github/workflows/security\.yml)' changed_files.txt; then
-            echo "backend=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "backend=false" >> "$GITHUB_OUTPUT"
-          fi
-
-          if grep -Eq '^(frontend/|docker-compose(\.prod)?\.yml|\.github/workflows/security\.yml)' changed_files.txt; then
+          if grep -Eq '^frontend/' changed_files.txt; then
             echo "frontend=true" >> "$GITHUB_OUTPUT"
           else
             echo "frontend=false" >> "$GITHUB_OUTPUT"
-          fi
-
-          if grep -Eq '^(backend/|frontend/|docker-compose(\.prod)?\.yml|\.github/workflows/security\.yml)' changed_files.txt; then
-            echo "images=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "images=false" >> "$GITHUB_OUTPUT"
           fi
 
   secrets:
@@ -88,9 +74,10 @@ jobs:
             gitleaks git --redact --no-banner --exit-code 1
           fi
 
+  # Fast PR feedback: keep secret scanning and frontend runtime audit close to the review loop.
+  # Deep SCA and image scans stay on mainline/manual runs to preserve PR turnaround time.
   dependency-check:
-    needs: changes
-    if: github.event_name != 'pull_request' || needs.changes.outputs.backend == 'true'
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -154,8 +141,7 @@ jobs:
         run: npm audit --omit=dev
 
   image-scan:
-    needs: changes
-    if: github.event_name != 'pull_request' || needs.changes.outputs.images == 'true'
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

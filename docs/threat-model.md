@@ -129,7 +129,7 @@
 | RR1 | XSS abusa da sessão sem ler cookies | Baixa | Alto | Aceito | CSP não configurado; depende de código React sem `dangerouslySetInnerHTML` e de dependências auditadas via `npm audit` |
 | RR2 | DDoS distribuído ultrapassa rate limit por IP | Média | Médio | Aceito | Requer WAF/CDN fora do escopo da aplicação |
 | RR3 | JWT_SECRET comprometido — todos os tokens invalidados | Muito baixa | Crítico | Aceito (com rotação) | Mitigado por `openssl rand -base64 64` na criação e rotação periódica; tokens têm TTL curto (15 min) |
-| RR4 | CVEs em dependências sem atualização | Média | Variável | Monitorado | OWASP Dependency Check + Trivy image scan + `npm audit` via CI; em PR os jobs pesados rodam quando a área relevante muda |
+| RR4 | CVEs em dependências sem atualização | Média | Variável | Monitorado | Gitleaks e CodeQL rodam de forma preventiva em PR; `npm audit` roda em PR quando o frontend muda; OWASP Dependency Check e Trivy permanecem em `main`, execução manual e rotina agendada |
 | RR5 | Logs sem persistência entre reinicializações em dev | Alta | Baixo | Aceito (dev only) | Produção deve montar volume ou usar driver de log externo (CloudWatch, Loki) |
 
 ---
@@ -146,7 +146,7 @@
 | Brute-force | Rate limiting por IP (Bucket4j) em `/api/auth/login` |
 | Enumeração | Resposta de erro uniforme em autenticação |
 | Logging | Correlation ID (MDC) em todos os requests; JSON estruturado em produção |
-| CI/CD | Gitleaks (secret scan) + CodeQL (SAST) + OWASP Dependency Check (SCA) + Trivy (image scan) |
+| CI/CD | PR: Gitleaks + CodeQL + `npm audit` relevante. Mainline/agendado: Gitleaks + CodeQL + OWASP Dependency Check + Trivy |
 
 ---
 

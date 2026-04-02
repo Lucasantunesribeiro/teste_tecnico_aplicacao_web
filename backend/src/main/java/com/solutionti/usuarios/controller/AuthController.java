@@ -1,5 +1,6 @@
 package com.solutionti.usuarios.controller;
 
+import com.solutionti.usuarios.config.OpenApiConfig;
 import com.solutionti.usuarios.dto.request.LoginRequest;
 import com.solutionti.usuarios.dto.response.ErrorResponse;
 import com.solutionti.usuarios.dto.response.LoginResponse;
@@ -8,6 +9,8 @@ import com.solutionti.usuarios.security.LoginRateLimiter;
 import com.solutionti.usuarios.service.AuthService;
 import com.solutionti.usuarios.service.auth.AuthSessionResult;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -76,8 +79,19 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    @Operation(summary = "Renovar sessao", description = "Rotaciona o refresh token e emite um novo access token")
-    @SecurityRequirement(name = "cookieAuth")
+    @Operation(
+        summary = "Renovar sessao",
+        description = "Rotaciona o refresh token e emite um novo access token",
+        parameters = {
+            @Parameter(
+                name = OpenApiConfig.CSRF_HEADER_NAME,
+                in = ParameterIn.HEADER,
+                required = true,
+                description = OpenApiConfig.CSRF_HEADER_DESCRIPTION
+            )
+        }
+    )
+    @SecurityRequirement(name = "refreshCookieAuth")
     public ResponseEntity<LoginResponse> refresh(
             @CookieValue(name = AuthCookieService.REFRESH_COOKIE_NAME, required = false) String refreshToken,
             HttpServletResponse response,
@@ -92,8 +106,24 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    @Operation(summary = "Encerrar sessao", description = "Revoga a sessao atual e limpa os cookies")
-    @SecurityRequirement(name = "cookieAuth")
+    @Operation(
+        summary = "Encerrar sessao",
+        description = "Revoga o refresh token quando presente e limpa os cookies da sessao no browser.",
+        parameters = {
+            @Parameter(
+                name = OpenApiConfig.REFRESH_TOKEN_COOKIE_NAME,
+                in = ParameterIn.COOKIE,
+                required = false,
+                description = OpenApiConfig.REFRESH_COOKIE_DESCRIPTION
+            ),
+            @Parameter(
+                name = OpenApiConfig.CSRF_HEADER_NAME,
+                in = ParameterIn.HEADER,
+                required = true,
+                description = OpenApiConfig.CSRF_HEADER_DESCRIPTION
+            )
+        }
+    )
     public ResponseEntity<Void> logout(
             @CookieValue(name = AuthCookieService.REFRESH_COOKIE_NAME, required = false) String refreshToken,
             HttpServletResponse response) {

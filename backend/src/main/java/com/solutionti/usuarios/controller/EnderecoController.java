@@ -1,5 +1,6 @@
 package com.solutionti.usuarios.controller;
 
+import com.solutionti.usuarios.config.OpenApiConfig;
 import com.solutionti.usuarios.dto.request.AtualizarEnderecoRequest;
 import com.solutionti.usuarios.dto.request.EnderecoRequest;
 import com.solutionti.usuarios.dto.response.EnderecoResponse;
@@ -8,6 +9,7 @@ import com.solutionti.usuarios.dto.response.PageResponse;
 import com.solutionti.usuarios.service.EnderecoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -40,35 +42,46 @@ import java.util.UUID;
 @RequestMapping("/api/enderecos")
 @RequiredArgsConstructor
 @Slf4j
-@Tag(name = "Enderecos", description = "Gerenciamento de endereços de usuários")
+@Tag(name = "Enderecos", description = "Gerenciamento de enderecos de usuarios")
 @SecurityRequirement(name = "cookieAuth")
 public class EnderecoController {
 
     private final EnderecoService enderecoService;
 
     @PostMapping
-    @Operation(summary = "Criar endereço", description = "Cria um novo endereço para um usuário")
+    @Operation(
+        summary = "Criar endereco",
+        description = "Cria um novo endereco para um usuario",
+        parameters = {
+            @Parameter(
+                name = OpenApiConfig.CSRF_HEADER_NAME,
+                in = ParameterIn.HEADER,
+                required = true,
+                description = OpenApiConfig.CSRF_HEADER_DESCRIPTION
+            )
+        }
+    )
     @ApiResponses({
-        @ApiResponse(responseCode = "201", description = "Endereço criado com sucesso",
+        @ApiResponse(responseCode = "201", description = "Endereco criado com sucesso",
             content = @Content(schema = @Schema(implementation = EnderecoResponse.class))),
-        @ApiResponse(responseCode = "400", description = "Dados inválidos ou CEP não encontrado",
+        @ApiResponse(responseCode = "400", description = "Dados invalidos ou CEP nao encontrado",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
         @ApiResponse(responseCode = "403", description = "Acesso negado",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-        @ApiResponse(responseCode = "404", description = "Usuário não encontrado",
+        @ApiResponse(responseCode = "404", description = "Usuario nao encontrado",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     public ResponseEntity<EnderecoResponse> criar(@RequestBody @Valid EnderecoRequest request) {
-        log.info("Requisição para criar endereço para usuário ID: {}", request.usuarioId());
+        log.info("Requisicao para criar endereco para usuario ID: {}", request.usuarioId());
         EnderecoResponse response = enderecoService.criar(request.usuarioId(), request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @GetMapping
     @Operation(
-        summary = "Listar todos os endereços (ADMIN)",
-        description = "Lista endereços paginados com filtros opcionais. Requer papel ADMIN. " +
-                      "Parâmetros de paginação: page (0-based), size, sort (ex: cidade,asc)."
+        summary = "Listar todos os enderecos (ADMIN)",
+        description = "Lista enderecos paginados com filtros opcionais. Requer papel ADMIN. "
+            + "Parametros de paginacao: page (0-based), size, sort (ex: cidade,asc)."
     )
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso",
@@ -77,8 +90,8 @@ public class EnderecoController {
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     public ResponseEntity<PageResponse<EnderecoResponse>> listarTodos(
-            @Parameter(description = "Filtrar por ID do usuário") @RequestParam(required = false) UUID usuarioId,
-            @Parameter(description = "Filtrar por endereço principal") @RequestParam(required = false) Boolean principal,
+            @Parameter(description = "Filtrar por ID do usuario") @RequestParam(required = false) UUID usuarioId,
+            @Parameter(description = "Filtrar por endereco principal") @RequestParam(required = false) Boolean principal,
             @Parameter(description = "Filtrar por CEP") @RequestParam(required = false) String cep,
             @Parameter(description = "Filtrar por cidade") @RequestParam(required = false) String cidade,
             @Parameter(description = "Filtrar por estado (sigla, ex: SP)") @RequestParam(required = false) String estado,
@@ -89,84 +102,117 @@ public class EnderecoController {
     }
 
     @GetMapping("/usuario/{usuarioId}")
-    @Operation(summary = "Listar endereços por usuário", description = "Lista todos os endereços de um usuário (ADMIN ou próprio usuário)")
+    @Operation(summary = "Listar enderecos por usuario", description = "Lista todos os enderecos de um usuario (ADMIN ou proprio usuario)")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso"),
         @ApiResponse(responseCode = "403", description = "Acesso negado",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-        @ApiResponse(responseCode = "404", description = "Usuário não encontrado",
+        @ApiResponse(responseCode = "404", description = "Usuario nao encontrado",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     public ResponseEntity<List<EnderecoResponse>> listarPorUsuario(
-            @Parameter(description = "ID do usuário", required = true) @PathVariable UUID usuarioId) {
-        log.debug("Requisição para listar endereços do usuário ID: {}", usuarioId);
+            @Parameter(description = "ID do usuario", required = true) @PathVariable UUID usuarioId) {
+        log.debug("Requisicao para listar enderecos do usuario ID: {}", usuarioId);
         return ResponseEntity.ok(enderecoService.listarPorUsuario(usuarioId));
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Buscar endereço por ID", description = "Busca um endereço pelo ID (ADMIN ou próprio usuário)")
+    @Operation(summary = "Buscar endereco por ID", description = "Busca um endereco pelo ID (ADMIN ou proprio usuario)")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Endereço encontrado",
+        @ApiResponse(responseCode = "200", description = "Endereco encontrado",
             content = @Content(schema = @Schema(implementation = EnderecoResponse.class))),
         @ApiResponse(responseCode = "403", description = "Acesso negado",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-        @ApiResponse(responseCode = "404", description = "Endereço não encontrado",
+        @ApiResponse(responseCode = "404", description = "Endereco nao encontrado",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     public ResponseEntity<EnderecoResponse> buscarPorId(
-            @Parameter(description = "ID do endereço", required = true) @PathVariable UUID id) {
-        log.debug("Requisição para buscar endereço ID: {}", id);
+            @Parameter(description = "ID do endereco", required = true) @PathVariable UUID id) {
+        log.debug("Requisicao para buscar endereco ID: {}", id);
         return ResponseEntity.ok(enderecoService.buscarPorId(id));
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "Atualizar endereço", description = "Atualiza os dados de um endereço (ADMIN ou próprio usuário)")
+    @Operation(
+        summary = "Atualizar endereco",
+        description = "Atualiza os dados de um endereco (ADMIN ou proprio usuario)",
+        parameters = {
+            @Parameter(
+                name = OpenApiConfig.CSRF_HEADER_NAME,
+                in = ParameterIn.HEADER,
+                required = true,
+                description = OpenApiConfig.CSRF_HEADER_DESCRIPTION
+            )
+        }
+    )
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Endereço atualizado com sucesso",
+        @ApiResponse(responseCode = "200", description = "Endereco atualizado com sucesso",
             content = @Content(schema = @Schema(implementation = EnderecoResponse.class))),
-        @ApiResponse(responseCode = "400", description = "Dados inválidos",
+        @ApiResponse(responseCode = "400", description = "Dados invalidos",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
         @ApiResponse(responseCode = "403", description = "Acesso negado",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-        @ApiResponse(responseCode = "404", description = "Endereço não encontrado",
+        @ApiResponse(responseCode = "404", description = "Endereco nao encontrado",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     public ResponseEntity<EnderecoResponse> atualizar(
-            @Parameter(description = "ID do endereço", required = true) @PathVariable UUID id,
+            @Parameter(description = "ID do endereco", required = true) @PathVariable UUID id,
             @RequestBody @Valid AtualizarEnderecoRequest request) {
-        log.info("Requisição para atualizar endereço ID: {}", id);
+        log.info("Requisicao para atualizar endereco ID: {}", id);
         return ResponseEntity.ok(enderecoService.atualizar(id, request));
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Deletar endereço", description = "Remove um endereço do sistema (ADMIN ou próprio usuário)")
+    @Operation(
+        summary = "Deletar endereco",
+        description = "Remove um endereco do sistema (ADMIN ou proprio usuario)",
+        parameters = {
+            @Parameter(
+                name = OpenApiConfig.CSRF_HEADER_NAME,
+                in = ParameterIn.HEADER,
+                required = true,
+                description = OpenApiConfig.CSRF_HEADER_DESCRIPTION
+            )
+        }
+    )
     @ApiResponses({
-        @ApiResponse(responseCode = "204", description = "Endereço deletado com sucesso"),
+        @ApiResponse(responseCode = "204", description = "Endereco deletado com sucesso"),
         @ApiResponse(responseCode = "403", description = "Acesso negado",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-        @ApiResponse(responseCode = "404", description = "Endereço não encontrado",
+        @ApiResponse(responseCode = "404", description = "Endereco nao encontrado",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     public ResponseEntity<Void> deletar(
-            @Parameter(description = "ID do endereço", required = true) @PathVariable UUID id) {
-        log.info("Requisição para deletar endereço ID: {}", id);
+            @Parameter(description = "ID do endereco", required = true) @PathVariable UUID id) {
+        log.info("Requisicao para deletar endereco ID: {}", id);
         enderecoService.deletar(id);
         return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/principal")
-    @Operation(summary = "Definir endereço principal", description = "Define um endereço como o principal do usuário (ADMIN ou próprio usuário)")
+    @Operation(
+        summary = "Definir endereco principal",
+        description = "Define um endereco como o principal do usuario (ADMIN ou proprio usuario)",
+        parameters = {
+            @Parameter(
+                name = OpenApiConfig.CSRF_HEADER_NAME,
+                in = ParameterIn.HEADER,
+                required = true,
+                description = OpenApiConfig.CSRF_HEADER_DESCRIPTION
+            )
+        }
+    )
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Endereço definido como principal",
+        @ApiResponse(responseCode = "200", description = "Endereco definido como principal",
             content = @Content(schema = @Schema(implementation = EnderecoResponse.class))),
         @ApiResponse(responseCode = "403", description = "Acesso negado",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-        @ApiResponse(responseCode = "404", description = "Endereço não encontrado",
+        @ApiResponse(responseCode = "404", description = "Endereco nao encontrado",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     public ResponseEntity<EnderecoResponse> definirComoPrincipal(
-            @Parameter(description = "ID do endereço", required = true) @PathVariable UUID id) {
-        log.info("Requisição para definir endereço ID: {} como principal", id);
+            @Parameter(description = "ID do endereco", required = true) @PathVariable UUID id) {
+        log.info("Requisicao para definir endereco ID: {} como principal", id);
         return ResponseEntity.ok(enderecoService.definirComoPrincipal(id));
     }
 }
