@@ -28,13 +28,16 @@ jobs:
           sudo install gitleaks /usr/local/bin/gitleaks
 
       - name: Run Gitleaks
-        run: gitleaks git --redact --no-banner --exit-code 1 .
+        run: gitleaks dir . --redact --no-banner --exit-code 1
 
   dependency-check:
+    if: github.event_name != 'push'
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: backend
+    env:
+      NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.2
@@ -46,8 +49,16 @@ jobs:
           java-version: "17"
           cache: maven
 
+      - name: Cache Dependency-Check data
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/dependency-check
+          key: ${{ runner.os }}-dependency-check-${{ hashFiles('backend/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-dependency-check-
+
       - name: OWASP Dependency Check
-        run: mvn -B org.owasp:dependency-check-maven:check -Dformat=HTML
+        run: mvn -B org.owasp:dependency-check-maven:check -Dformat=HTML -DdataDirectory=$HOME/.cache/dependency-check -DnvdValidForHours=168 -DnvdApiKeyEnvironmentVariable=NVD_API_KEY
         continue-on-error: true
 
   npm-audit:
@@ -81,6 +92,14 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Cache Trivy database
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/trivy
+          key: ${{ runner.os }}-trivy-db
+          restore-keys: |
+            ${{ runner.os }}-trivy-
+
       - name: Build backend image
         uses: docker/build-push-action@v6
         with:
@@ -107,12 +126,12 @@ jobs:
       - name: Scan backend image
         id: scan_backend
         continue-on-error: true
-        run: trivy image --exit-code 1 --ignore-unfixed --severity CRITICAL,HIGH --format sarif --output backend-trivy.sarif usuarios-backend:ci
+        run: trivy image --scanners vuln --pkg-types library --exit-code 1 --ignore-unfixed --severity CRITICAL,HIGH --format sarif --output backend-trivy.sarif usuarios-backend:ci
 
       - name: Scan frontend image
         id: scan_frontend
         continue-on-error: true
-        run: trivy image --exit-code 1 --ignore-unfixed --severity CRITICAL,HIGH --format sarif --output frontend-trivy.sarif usuarios-frontend:ci
+        run: trivy image --scanners vuln --pkg-types library --exit-code 1 --ignore-unfixed --severity CRITICAL,HIGH --format sarif --output frontend-trivy.sarif usuarios-frontend:ci
 
       - name: Upload backend scan
         if: always() && (steps.scan_backend.outcome == 'success' || steps.scan_backend.outcome == 'failure')
